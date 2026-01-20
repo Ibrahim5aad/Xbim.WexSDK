@@ -9,21 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-// Configure ThemeService
 var themeService = new ThemeService();
 themeService.SetTheme(ViewerTheme.Dark);
-themeService.SetAccentColors(
-    lightColor: "#0969da",
-    darkColor: "#1e7e34"
-);
-
-// Customize selection and hover colors (optional - defaults to accent color if not set)
-// Selection color: color used when elements are selected/highlighted
-// Hover color: color used when mouse hovers over elements
-themeService.SetSelectionAndHoverColors(
-    selectionColor: "#ff6b6b",  // Red for selection (different from accent color)
-    hoverColor: "#4da3ff"        // Blue for hover (different from selection)
-);
+themeService.SetAccentColors(lightColor: "#0969da", darkColor: "#1e7e34");
+themeService.SetBackgroundColors(lightColor: "#ffffff", darkColor: "#404040");
 builder.Services.AddSingleton(themeService);
 
 // Register IFC processing services (server-side only)

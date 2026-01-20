@@ -16,15 +16,30 @@
     overflow: hidden;
 }
 
-.properties-panel.position-dragged {
-    /* When dragged, position is controlled by transform */
+/* Embedded mode - inside sidebar panels */
+.properties-panel.embedded {
+    position: relative;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    max-height: none;
+    min-width: unset;
+    max-width: unset;
+    opacity: 1;
+    pointer-events: auto;
+    background: transparent;
+    height: 100%;
+}
+
+/* Dragging styles - only apply when not embedded */
+.properties-panel:not(.embedded).position-dragged {
     left: 0 !important;
     right: auto !important;
     top: 0 !important;
     bottom: auto !important;
 }
 
-.properties-panel.dragging {
+.properties-panel:not(.embedded).dragging {
     transition: none;
     z-index: 1000;
     box-shadow: var(--xbim-shadow-xl);
@@ -39,24 +54,24 @@
     max-height: none;
 }
 
-/* Position variants */
-.properties-panel.position-left {
+/* Position variants - only apply when not embedded */
+.properties-panel:not(.embedded).position-left {
     left: 16px;
     top: 16px;
 }
 
-.properties-panel.position-right {
+.properties-panel:not(.embedded).position-right {
     right: 16px;
     top: 16px;
 }
 
-.properties-panel.position-bottom-left {
+.properties-panel:not(.embedded).position-bottom-left {
     left: 16px;
     bottom: 16px;
     top: auto;
 }
 
-.properties-panel.position-bottom-right {
+.properties-panel:not(.embedded).position-bottom-right {
     right: 16px;
     bottom: 16px;
     top: auto;
@@ -185,6 +200,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 0;
+    padding-left: 1px;
 }
 
 /* Loading state */

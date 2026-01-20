@@ -192,8 +192,8 @@ public static class ViewerBuiltInButtons
         {
             Icon = "bi bi-eye-slash",
             ToggledIcon = "bi bi-eye",
-            Tooltip = "Hide Selected",
-            ToggledTooltip = "Unhide Selected",
+            Tooltip = "Hide selected",
+            ToggledTooltip = "Unhide all",
             IsToggled = false,
             OnToggle = EventCallback.Factory.Create<bool>(viewer, async (isHidden) =>
             {
@@ -206,7 +206,7 @@ public static class ViewerBuiltInButtons
                     }
                     else
                     {
-                        await viewer.ShowElementsAsync(selected);
+                        await viewer.UnhideAllElementsAsync();
                     }
                     onStateChanged?.Invoke();
                 }

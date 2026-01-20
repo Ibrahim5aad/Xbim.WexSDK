@@ -1,0 +1,110 @@
+@using Xbim.WexBlazor.Models
+@namespace Xbim.WexBlazor.Components
+@implements IDisposable
+
+<div class="sidebar-panel @(IsOpen ? "open" : "")" style="@GetPanelStyle()">
+    <div class="sidebar-panel-header">
+        <span class="sidebar-panel-title">
+            <i class="bi @Icon"></i>
+            @Title
+        </span>
+        <div class="sidebar-panel-actions">
+            <button class="sidebar-panel-btn" @onclick="ToggleDock" title="@(_parentSidebar?.IsDocked == true ? "Float" : "Dock")">
+                <i class="bi bi-@(_parentSidebar?.IsDocked == true ? "pip" : "pin-angle")"></i>
+            </button>
+            <button class="sidebar-panel-btn" @onclick="Close" title="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div class="sidebar-panel-content">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private ViewerSidebar? _parentSidebar { get; set; }
+    
+    [Parameter]
+    public string Icon { get; set; } = "bi-square";
+    
+    [Parameter]
+    public string Title { get; set; } = "Panel";
+    
+    [Parameter]
+    public bool IsOpen { get; set; } = false;
+    
+    [Parameter]
+    public EventCallback<bool> IsOpenChanged { get; set; }
+    
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+    
+    [Parameter]
+    public int Width { get; set; } = 320;
+    
+    private SidebarPanelInfo? _panelInfo;
+    
+    protected override void OnInitialized()
+    {
+        _panelInfo = new SidebarPanelInfo
+        {
+            Icon = Icon,
+            Title = Title,
+            Width = Width,
+            IsOpen = IsOpen,
+            OnToggle = () => InvokeAsync(StateHasChanged)
+        };
+        
+        _parentSidebar?.RegisterPanel(_panelInfo);
+    }
+    
+    protected override void OnParametersSet()
+    {
+        if (_panelInfo != null)
+        {
+            _panelInfo.Icon = Icon;
+            _panelInfo.Title = Title;
+            _panelInfo.Width = Width;
+            
+            if (_panelInfo.IsOpen != IsOpen)
+            {
+                IsOpen = _panelInfo.IsOpen;
+                IsOpenChanged.InvokeAsync(IsOpen);
+            }
+        }
+    }
+    
+    private string GetPanelStyle()
+    {
+        return $"width: {Width}px;";
+    }
+    
+    private async Task ToggleDock()
+    {
+        if (_parentSidebar != null)
+        {
+            await _parentSidebar.ToggleDocked();
+        }
+    }
+    
+    private async Task Close()
+    {
+        if (_panelInfo != null)
+        {
+            _panelInfo.IsOpen = false;
+        }
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        _parentSidebar?.NotifyPanelChanged();
+    }
+    
+    public void Dispose()
+    {
+        if (_panelInfo != null)
+        {
+            _parentSidebar?.UnregisterPanel(_panelInfo);
+        }
+    }
+}

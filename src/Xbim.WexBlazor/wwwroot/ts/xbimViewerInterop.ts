@@ -1,10 +1,8 @@
 // xbimViewerInterop.ts
 // This module provides interop between Blazor and xBIM Viewer
 
-// Import types for TypeScript compilation only - these won't be used at runtime
 import type { Viewer as XbimViewer } from '@xbim/viewer';
 
-// We'll load the viewer dynamically at runtime, so we need to define the enums ourselves
 const ViewType = {
     TOP: 0,
     BOTTOM: 1,
@@ -353,9 +351,30 @@ export function showElements(viewerId: string, elementIds: number[]): boolean {
     }
 }
 
+// Unhide all elements
+export function unhideAllElements(viewerId: string): boolean {
+    try {
+        const viewer = viewerInstances.get(viewerId);
+        if (!viewer) {
+            console.error(`Viewer with id ${viewerId} not found`);
+            return false;
+        }
+        const hidden = viewer.getProductsWithState(State.HIDDEN);
+        if (hidden && hidden.length > 0) {
+            const ids = hidden.map(p => p.id);
+            viewer.removeState(State.HIDDEN, ids);
+        }
+        return true;
+    } catch (error) {
+        console.error('Error unhiding all elements:', error);
+        return false;   
+    }
+}
+
 // Get all products from the model region
 export function getAllProducts(viewerId: string): Array<{id: number, model: number}> {
     try {
+        console.log(viewerInstances);
         const viewer = viewerInstances.get(viewerId);
         if (!viewer) {
             console.error(`Viewer with id ${viewerId} not found`);
@@ -366,24 +385,18 @@ export function getAllProducts(viewerId: string): Array<{id: number, model: numb
         const viewerAny = viewer as any;
         
         // Iterate through all model handles
-        if (!viewerAny.modelHandles || viewerAny.modelHandles.length === 0) {
+        if (!viewerAny._handles || viewerAny._handles.length === 0) {
             console.warn('No model handles found');
             return [];
         }
         
-        console.log(`Found ${viewerAny.modelHandles.length} model handle(s)`);
+        console.log(`Found ${viewerAny._handles.length} model handle(s)`);
         
-        for (const handle of viewerAny.modelHandles) {
+        for (const handle of viewerAny._handles) {
             const modelId = handle.id;
-            console.log(`Processing model ${modelId}`);
-            
-            // Try to get the region for this model
             try {
-                const region = viewerAny.getRegion(modelId);
+                const region = viewerAny.getMergedRegion();
                 if (region && region.population) {
-                    console.log(`Model ${modelId} has ${region.population} products`);
-                    
-                    // The region.population is an array of product IDs
                     for (const productId of region.population) {
                         if (productId > 0) {
                             allProducts.push({ id: productId, model: modelId });
@@ -395,7 +408,6 @@ export function getAllProducts(viewerId: string): Array<{id: number, model: numb
             }
         }
         
-        console.log(`Found ${allProducts.length} products total`);
         return allProducts;
     } catch (error) {
         console.error('Error getting all products:', error);
@@ -403,8 +415,8 @@ export function getAllProducts(viewerId: string): Array<{id: number, model: numb
     }
 }
 
-// Isolate specific elements (hide everything else)
-export function isolateElements(viewerId: string, elementIds: number[]): boolean {
+// Isolate specific elements (hide everything else) using native viewer.isolate()
+export function isolateElements(viewerId: string, elementIds: number[], modelId?: number): boolean {
     try {
         const viewer = viewerInstances.get(viewerId);
         if (!viewer) {
@@ -417,42 +429,33 @@ export function isolateElements(viewerId: string, elementIds: number[]): boolean
             return false;
         }
         
-        // Get all products to find what to hide
-        const allProducts = getAllProducts(viewerId);
-        console.log(`getAllProducts returned ${allProducts.length} products`);
+        const viewerAny = viewer as any;
         
-        if (allProducts.length === 0) {
-            console.error('No products found to isolate');
-            return false;
+        // Use native isolate if modelId is provided
+        if (modelId !== undefined) {
+            viewer.isolate(elementIds, modelId);
+            console.log(`✓ Isolated ${elementIds.length} elements in model ${modelId}`);
+            return true;
         }
         
-        // Find products to hide (all except the ones to isolate)
-        const elementsSet = new Set(elementIds);
-        const toHide = allProducts
-            .filter(p => !elementsSet.has(p.id))
-            .map(p => p.id);
-        
-        console.log(`Elements to isolate: ${elementIds.join(', ')}`);
-        console.log(`Elements to hide: ${toHide.length} out of ${allProducts.length} total`);
-        
-        // First, ensure the isolated elements are visible (remove any HIDDEN state)
-        viewer.removeState(State.HIDDEN, elementIds);
-        
-        // Then hide all other elements
-        if (toHide.length > 0) {
-            viewer.setState(State.HIDDEN, toHide);
-            console.log(`✓ Isolated ${elementIds.length} elements by hiding ${toHide.length} elements`);
+        // If no modelId, isolate in all models
+        if (viewerAny._handles && viewerAny._handles.length > 0) {
+            for (const handle of viewerAny._handles) {
+                viewer.isolate(elementIds, handle.id);
+            }
+            console.log(`✓ Isolated ${elementIds.length} elements in all models`);
+            return true;
         }
         
-        return true;
+        return false;
     } catch (error) {
         console.error('Error isolating elements:', error);
         return false;
     }
 }
 
-// Unisolate (show all hidden elements)
-export function unisolateElements(viewerId: string): boolean {
+// Unisolate (show all elements) by clearing isolatedProducts on handles
+export function unisolateElements(viewerId: string, modelId?: number): boolean {
     try {
         const viewer = viewerInstances.get(viewerId);
         if (!viewer) {
@@ -460,14 +463,41 @@ export function unisolateElements(viewerId: string): boolean {
             return false;
         }
         
-        // Show all hidden elements by removing the HIDDEN state
-        const hiddenProducts = viewer.getProductsWithState(State.HIDDEN);
+        const viewerAny = viewer as any;
         
+        // Clear isolation by setting isolatedProducts to undefined on handles
+        // Using viewer.isolate([]) doesn't work - it isolates "nothing" instead of clearing
+        if (viewerAny._handles && viewerAny._handles.length > 0) {
+            for (const handle of viewerAny._handles) {
+                if (modelId !== undefined && handle.id !== modelId) {
+                    continue;
+                }
+                // Clear the isolation by setting to undefined (not empty array)
+                if (handle.isolatedProducts !== undefined) {
+                    handle.isolatedProducts = undefined;
+                }
+                // Also try resetting via the stopped property if isolation uses that
+                if (handle._model) {
+                    handle._model.isolatedProducts = undefined;
+                }
+            }
+        }
+        
+        // Also remove any HIDDEN states
+        const hiddenProducts = viewer.getProductsWithState(State.HIDDEN);
         if (hiddenProducts.length > 0) {
             const hiddenIds = hiddenProducts.map((p: any) => p.id);
             viewer.removeState(State.HIDDEN, hiddenIds);
-            console.log(`Unisolated by showing ${hiddenIds.length} hidden elements`);
         }
+        
+        // Reset the section box to infinity to prevent "disjoint" issues
+        if (viewer.sectionBox) {
+            viewer.sectionBox.setToInfinity();
+        }
+        
+        // Trigger a redraw to refresh the viewer state
+        viewer.draw();
+        console.log(`✓ Unisolated ${modelId !== undefined ? `model ${modelId}` : 'all models'}`);
         
         return true;
     } catch (error) {
@@ -476,7 +506,7 @@ export function unisolateElements(viewerId: string): boolean {
     }
 }
 
-export function getIsolatedElements(viewerId: string): number[] {
+export function getIsolatedElements(viewerId: string, modelId?: number): number[] {
     try {
         const viewer = viewerInstances.get(viewerId);
         if (!viewer) {
@@ -484,19 +514,24 @@ export function getIsolatedElements(viewerId: string): number[] {
             return [];
         }
         
-        // Get all products
-        const allProducts = getAllProducts(viewerId);
+        const viewerAny = viewer as any;
+        const allIsolated: number[] = [];
         
-        // Get hidden products
-        const hiddenProducts = viewer.getProductsWithState(State.HIDDEN);
-        const hiddenSet = new Set(hiddenProducts.map((p: any) => p.id));
+        if (modelId !== undefined) {
+            return viewer.getIsolated(modelId);
+        }
         
-        // Isolated elements are the visible ones (not hidden)
-        const isolated = allProducts
-            .filter(p => !hiddenSet.has(p.id))
-            .map(p => p.id);
+        // Get isolated from all models
+        if (viewerAny._handles && viewerAny._handles.length > 0) {
+            for (const handle of viewerAny._handles) {
+                const isolated = viewer.getIsolated(handle.id);
+                if (isolated && isolated.length > 0) {
+                    allIsolated.push(...isolated);
+                }
+            }
+        }
         
-        return isolated;
+        return allIsolated;
     } catch (error) {
         console.error('Error getting isolated elements:', error);
         return [];
@@ -559,7 +594,6 @@ export function unhighlightElements(viewerId: string, elementIds: number[], mode
         
         viewer.removeState(State.HIGHLIGHTED, elementIds, modelId);
         viewer.resetState(elementIds, modelId);
-        console.log(`Unhighlighted ${elementIds.length} elements`);
         return true;
     } catch (error) {
         console.error('Error unhighlighting elements:', error);
@@ -650,7 +684,6 @@ export function getSelectedElements(viewerId: string): Array<{id: number, model:
         }
         
         const selected = viewer.getProductsWithState(State.HIGHLIGHTED);
-        console.log(`Found ${selected.length} selected elements`);
         return selected;
     } catch (error) {
         console.error('Error getting selected elements:', error);
@@ -1143,5 +1176,154 @@ export function disposeViewer(viewerId: string): boolean {
     } catch (error) {
         console.error('Error disposing viewer:', error);
         return false;
+    }
+}
+
+// Get all product types and their products for a model
+export function getModelProductTypes(viewerId: string, modelId?: number): Array<{typeId: number, productIds: number[], modelId: number}> {
+    try {
+        const viewer = viewerInstances.get(viewerId);
+        if (!viewer) {
+            console.error(`Viewer with id ${viewerId} not found`);
+            return [];
+        }
+
+        const viewerAny = viewer as any;
+        const result: Array<{typeId: number, productIds: number[], modelId: number}> = [];
+        const typeSet = new Set<number>();
+
+        if (!viewerAny._handles || viewerAny._handles.length === 0) {
+            return [];
+        }
+
+        for (const handle of viewerAny._handles) {
+            if (modelId !== undefined && handle.id !== modelId) {
+                continue;
+            }
+
+            const handleModelId = handle.id as number;
+            
+            if (handle._model && handle._model.productMaps) {
+                const productMaps = handle._model.productMaps;
+                
+                // Handle Map type
+                if (productMaps instanceof Map) {
+                    for (const [productId, productMap] of productMaps) {
+                        if (productMap && productMap.type !== undefined) {
+                            const typeId = productMap.type as number;
+                            if (!typeSet.has(typeId)) {
+                                typeSet.add(typeId);
+                                const products = viewer.getProductsOfType(typeId, handleModelId);
+                                if (products && products.length > 0) {
+                                    result.push({
+                                        typeId: typeId,
+                                        productIds: products,
+                                        modelId: handleModelId
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                // Handle object/array type
+                else if (typeof productMaps === 'object') {
+                    const entries = Array.isArray(productMaps) 
+                        ? productMaps.map((v, i) => [i, v] as [number, any])
+                        : Object.entries(productMaps);
+                    
+                    for (const [productId, productMap] of entries) {
+                        if (productMap && productMap.type !== undefined) {
+                            const typeId = productMap.type as number;
+                            if (!typeSet.has(typeId)) {
+                                typeSet.add(typeId);
+                                const products = viewer.getProductsOfType(typeId, handleModelId);
+                                if (products && products.length > 0) {
+                                    result.push({
+                                        typeId: typeId,
+                                        productIds: products,
+                                        modelId: handleModelId
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error getting model product types:', error);
+        return [];
+    }
+}
+
+// Get product type for a specific product
+export function getProductType(viewerId: string, productId: number, modelId?: number): number | null {
+    try {
+        const viewer = viewerInstances.get(viewerId);
+        if (!viewer) {
+            return null;
+        }
+        return viewer.getProductType(productId, modelId);
+    } catch (error) {
+        console.error('Error getting product type:', error);
+        return null;
+    }
+}
+
+// Get all products of a specific type
+export function getProductsOfType(viewerId: string, typeId: number, modelId?: number): number[] {
+    try {
+        const viewer = viewerInstances.get(viewerId);
+        if (!viewer) {
+            return [];
+        }
+        return viewer.getProductsOfType(typeId, modelId) || [];
+    } catch (error) {
+        console.error('Error getting products of type:', error);
+        return [];
+    }
+}
+
+// Get all unique product types across all loaded models
+export function getAllProductTypes(viewerId: string): Array<{typeId: number, count: number, modelId: number}> {
+    try {
+        const viewer = viewerInstances.get(viewerId);
+        if (!viewer) {
+            return [];
+        }
+
+        const viewerAny = viewer as any;
+        const typeMap = new Map<string, {typeId: number, count: number, modelId: number}>();
+
+        if (!viewerAny._handles || viewerAny._handles.length === 0) {
+            return [];
+        }
+
+        for (const handle of viewerAny._handles) {
+            const handleModelId = handle.id as number;
+            
+            if (handle._model && handle._model.productMaps) {
+                const typeCounts = new Map<number, number>();
+                
+                for (const [productId, productMap] of handle._model.productMaps) {
+                    if (productMap && productMap.type !== undefined) {
+                        const typeId = productMap.type as number;
+                        typeCounts.set(typeId, (typeCounts.get(typeId) || 0) + 1);
+                    }
+                }
+                
+                for (const [typeId, count] of typeCounts) {
+                    const key = `${handleModelId}-${typeId}`;
+                    typeMap.set(key, { typeId, count, modelId: handleModelId });
+                }
+            }
+        }
+
+        return Array.from(typeMap.values());
+    } catch (error) {
+        console.error('Error getting all product types:', error);
+        return [];
     }
 }

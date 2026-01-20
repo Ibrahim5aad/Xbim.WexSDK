@@ -7,7 +7,9 @@
 @inject IJSRuntime JSRuntime
 
 <div class="xbim-viewer-container" style="@ContainerStyle">
-    <canvas id="@Id" width="@Width" height="@Height"></canvas>
+    <div class="xbim-canvas-wrapper">
+        <canvas id="@Id" width="@Width" height="@Height"></canvas>
+    </div>
     @ChildContent
 </div>
 
@@ -712,6 +714,19 @@
     }
 
     /// <summary>
+    /// Unhides all elements
+    /// </summary>
+    public async Task<bool> UnhideAllElementsAsync()
+    {
+        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        {
+            return await _xbimViewer.UnhideAllElementsAsync(_viewerId);
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Isolates specific elements (hides everything else)
     /// </summary>
     public async Task<bool> IsolateElementsAsync(int[] elementIds)
@@ -749,6 +764,39 @@
         }
         
         return Array.Empty<int>();
+    }
+
+    public async Task<List<ProductTypeInfo>> GetProductTypesAsync(int? modelId = null)
+    {
+        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
+            return new List<ProductTypeInfo>();
+
+        var results = await _xbimViewer.GetModelProductTypesAsync(_viewerId, modelId);
+        return results.Select(r => new ProductTypeInfo
+        {
+            TypeId = r.TypeId,
+            TypeName = ProductTypeNames.GetTypeName(r.TypeId),
+            DisplayName = ProductTypeNames.GetDisplayName(r.TypeId),
+            Icon = ProductTypeNames.GetTypeIcon(r.TypeId),
+            ProductIds = r.ProductIds,
+            ModelId = r.ModelId
+        }).ToList();
+    }
+
+    public async Task<int?> GetProductTypeAsync(int productId, int? modelId = null)
+    {
+        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+            return null;
+
+        return await _xbimViewer.GetProductTypeAsync(_viewerId, productId, modelId);
+    }
+
+    public async Task<int[]> GetProductsOfTypeAsync(int typeId, int? modelId = null)
+    {
+        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
+            return Array.Empty<int>();
+
+        return await _xbimViewer.GetProductsOfTypeAsync(_viewerId, typeId, modelId);
     }
 
     /// <summary>

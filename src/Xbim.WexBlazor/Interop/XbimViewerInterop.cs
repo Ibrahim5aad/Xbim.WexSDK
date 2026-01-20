@@ -165,6 +165,12 @@ public class XbimViewerInterop : JsInteropBase
         return await InvokeAsync<bool>("showElements", viewerId, elementIds);
     }
 
+    public async ValueTask<bool> UnhideAllElementsAsync(string viewerId)
+    {
+        return await InvokeAsync<bool>("unhideAllElements", viewerId);
+    }
+
+
     /// <summary>
     /// Isolates specific elements (hides everything else)
     /// </summary>
@@ -323,6 +329,32 @@ public class XbimViewerInterop : JsInteropBase
     public async ValueTask<SelectedElement[]> GetSelectedElementsAsync(string viewerId)
     {
         return await InvokeAsync<SelectedElement[]>("getSelectedElements", viewerId) ?? Array.Empty<SelectedElement>();
+    }
+
+    public async ValueTask<ProductTypeResult[]> GetModelProductTypesAsync(string viewerId, int? modelId = null)
+    {
+        if (modelId.HasValue)
+            return await InvokeAsync<ProductTypeResult[]>("getModelProductTypes", viewerId, modelId.Value) ?? Array.Empty<ProductTypeResult>();
+        return await InvokeAsync<ProductTypeResult[]>("getModelProductTypes", viewerId) ?? Array.Empty<ProductTypeResult>();
+    }
+
+    public async ValueTask<int?> GetProductTypeAsync(string viewerId, int productId, int? modelId = null)
+    {
+        if (modelId.HasValue)
+            return await InvokeAsync<int?>("getProductType", viewerId, productId, modelId.Value);
+        return await InvokeAsync<int?>("getProductType", viewerId, productId);
+    }
+
+    public async ValueTask<int[]> GetProductsOfTypeAsync(string viewerId, int typeId, int? modelId = null)
+    {
+        if (modelId.HasValue)
+            return await InvokeAsync<int[]>("getProductsOfType", viewerId, typeId, modelId.Value) ?? Array.Empty<int>();
+        return await InvokeAsync<int[]>("getProductsOfType", viewerId, typeId) ?? Array.Empty<int>();
+    }
+
+    public async ValueTask<ProductTypeCountResult[]> GetAllProductTypesAsync(string viewerId)
+    {
+        return await InvokeAsync<ProductTypeCountResult[]>("getAllProductTypes", viewerId) ?? Array.Empty<ProductTypeCountResult>();
     }
 
     /// <summary>
@@ -554,4 +586,28 @@ public class ViewerEventArgs
         X.HasValue && Y.HasValue && Z.HasValue 
             ? (X.Value, Y.Value, Z.Value) 
             : null;
+}
+
+public class ProductTypeResult
+{
+    [JsonPropertyName("typeId")]
+    public int TypeId { get; set; }
+    
+    [JsonPropertyName("productIds")]
+    public int[] ProductIds { get; set; } = Array.Empty<int>();
+    
+    [JsonPropertyName("modelId")]
+    public int ModelId { get; set; }
+}
+
+public class ProductTypeCountResult
+{
+    [JsonPropertyName("typeId")]
+    public int TypeId { get; set; }
+    
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+    
+    [JsonPropertyName("modelId")]
+    public int ModelId { get; set; }
 } 

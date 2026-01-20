@@ -9,6 +9,7 @@
 @implements IDisposable
 @inject IJSRuntime JSRuntime
 @inject ThemeService ThemeService
+@inject PropertyService PropertyService
 
 <PageTitle>Xbim Viewer</PageTitle>
 
@@ -17,7 +18,7 @@
                          Id="xbimViewer"
                          Width="100%"
                          Height="600"
-                         BackgroundColor="@GetViewerBackgroundColor()"
+                         BackgroundColor="@ThemeService.CurrentBackgroundColor"
                          ContainerStyle="width: 100%; height: 100%; position: relative;"
                          OnViewerInitialized="HandleViewerInitialized"
                          OnModelLoaded="HandleModelLoaded"
@@ -53,6 +54,28 @@
             <ViewerToolbar Items="@_toolbarItems"
                            Position="@_toolbarPosition"
                            Alignment="@_toolbarAlignment" />
+
+            <ViewerSidebar Position="SidebarPosition.Left">
+                    <SidebarPanel Icon="bi-info-circle" Title="Properties" @bind-IsOpen="_showPropertiesPanel" Width="320">
+                        <PropertiesPanel 
+                            IsVisible="true"
+                            Properties="@_currentProperties"
+                            IsLoading="@_isLoadingProperties"
+                            ShowHeader="false" />
+                    </SidebarPanel>
+                    <SidebarPanel Icon="bi-diagram-3" Title="Hierarchy" @bind-IsOpen="_showHierarchyPanel" Width="300">
+                        <ModelHierarchyPanel 
+                            IsVisible="true"
+                            ProductTypes="@_productTypes"
+                            HasSpatialData="false"
+                            IsLoading="@_isLoadingHierarchy"
+                            SelectedProducts="@_selectedProductSet"
+                            GetModelNameFunc="@GetModelName"
+                            ShowHeader="false"
+                            OnRefresh="RefreshHierarchy"
+                            OnProductSelected="HandleHierarchyProductSelected" />
+                    </SidebarPanel>
+            </ViewerSidebar>
         }
 
 </XbimViewerComponent>
@@ -61,7 +84,16 @@
     private XbimViewerComponent? _xbimViewer;
     private bool _showFileLoader = true;
     private bool _showModelManager = true;
+    private bool _showPropertiesPanel = false;
+    private bool _showHierarchyPanel = false;
     private List<SelectedElement> _selectedElements = new();
+    
+    private ElementProperties? _currentProperties;
+    private bool _isLoadingProperties = false;
+    
+    private List<ProductTypeInfo> _productTypes = new();
+    private bool _isLoadingHierarchy = false;
+    private HashSet<(int ProductId, int ModelId)> _selectedProductSet = new();
     
     // Plugin tracking
     private bool _gridActive = false;
@@ -113,7 +145,6 @@
     
     private void ApplyTheme()
     {
-        // Update theme button icon when theme changes
         if (_themeButton != null)
         {
             _themeButton.Icon = GetThemeIcon();
@@ -123,88 +154,23 @@
     
     private async Task ApplyThemeAsync()
     {
-        var themeClass = ThemeService.GetThemeClass();
-        await JSRuntime.InvokeVoidAsync("eval", $"document.body.className = '{themeClass}';");
-        
-        await ApplyCustomAccentColorAsync();
+        await ThemeService.ApplyAsync(JSRuntime);
         
         if (_xbimViewer != null)
         {
-            await _xbimViewer.SetBackgroundColorAsync(GetViewerBackgroundColor());
-            await _xbimViewer.SetHighlightingColorAsync(ThemeService.EffectiveSelectionColor);
-            await _xbimViewer.SetHoverPickColorAsync(ThemeService.EffectiveHoverColor);
-            
-            if (_gridPlugin != null && _gridActive)
-            {
-                _gridPlugin.Color = GetGridColor();
-            }
+            await ThemeService.ApplyToViewerAsync(_xbimViewer, _gridActive ? _gridPlugin : null);
         }
         
         StateHasChanged();
-    }
-    
-    private async Task ApplyCustomAccentColorAsync()
-    {
-        var accentColor = ThemeService.CurrentAccentColor;
-        var hoverColor = LightenColor(accentColor, 0.15);
-        var bgColor = AddAlpha(accentColor, 0.2);
-        
-        var cssVars = $@"
-            document.body.style.setProperty('--xbim-accent-primary', '{accentColor}', 'important');
-            document.body.style.setProperty('--xbim-accent-primary-hover', '{hoverColor}', 'important');
-            document.body.style.setProperty('--xbim-accent-primary-bg', '{bgColor}', 'important');
-            document.body.style.setProperty('--xbim-border-hover', '{accentColor}', 'important');
-        ";
-        
-        await JSRuntime.InvokeVoidAsync("eval", cssVars);
-    }
-    
-    private string LightenColor(string hex, double amount)
-    {
-        hex = hex.TrimStart('#');
-        var r = Convert.ToInt32(hex.Substring(0, 2), 16);
-        var g = Convert.ToInt32(hex.Substring(2, 2), 16);
-        var b = Convert.ToInt32(hex.Substring(4, 2), 16);
-        
-        r = Math.Min(255, (int)(r + (255 - r) * amount));
-        g = Math.Min(255, (int)(g + (255 - g) * amount));
-        b = Math.Min(255, (int)(b + (255 - b) * amount));
-        
-        return $"#{r:X2}{g:X2}{b:X2}";
-    }
-    
-    private string AddAlpha(string hex, double alpha)
-    {
-        hex = hex.TrimStart('#');
-        var r = Convert.ToInt32(hex.Substring(0, 2), 16);
-        var g = Convert.ToInt32(hex.Substring(2, 2), 16);
-        var b = Convert.ToInt32(hex.Substring(4, 2), 16);
-        
-        return $"rgba({r}, {g}, {b}, {alpha})";
-    }
-    
-    private string GetViewerBackgroundColor()
-    {
-        return ThemeService.CurrentTheme == ViewerTheme.Dark ? "#404040" : "#ffffff";
-    }
-    
-    private double[] GetGridColor()
-    {
-        return ThemeService.CurrentTheme == ViewerTheme.Dark 
-            ? new[] { 1.0, 1.0, 1.0, 1.0 }  // White for dark theme
-            : new[] { 0.0, 0.0, 0.0, 1.0 };  // Black for light theme
     }
     
     private async Task HandleViewerInitialized(string viewerId)
     {
         InitializeToolbar();
         
-        // Set viewer colors
         if (_xbimViewer != null)
         {
-            await _xbimViewer.SetBackgroundColorAsync(GetViewerBackgroundColor());
-            await _xbimViewer.SetHighlightingColorAsync(ThemeService.EffectiveSelectionColor);
-            await _xbimViewer.SetHoverPickColorAsync(ThemeService.EffectiveHoverColor);
+            await ThemeService.ApplyToViewerAsync(_xbimViewer);
         }
         
         var navigationCubePlugin = new NavigationCubePlugin()
@@ -220,7 +186,7 @@
             Factor = 1.5,
             ZFactor = 20,
             NumberOfLines = 20,
-            Color = GetGridColor()
+            Color = ThemeService.CurrentGridColor
         };
         await _xbimViewer!.AddPluginAsync(_gridPlugin);
         _gridActive = true;
@@ -434,16 +400,40 @@
             if (isHighlighted)
             {
                 await _xbimViewer.UnhighlightElementsAsync(new[] { e.Id.Value }, e.Model);
+                _currentProperties = null;
             }
             else
             {
                 await _xbimViewer.HighlightElementsAsync(new[] { e.Id.Value }, e.Model);
+                await FetchPropertiesAsync(e.Id.Value, e.Model ?? 0);
             }
             
             await GetSelection();
         }
         
         await InvokeAsync(StateHasChanged);
+    }
+    
+    private async Task FetchPropertiesAsync(int elementId, int modelId)
+    {
+        try
+        {
+            _isLoadingProperties = true;
+            _showPropertiesPanel = true;
+            StateHasChanged();
+            
+            _currentProperties = await PropertyService.GetPropertiesAsync(elementId, modelId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching properties: {ex.Message}");
+            _currentProperties = null;
+        }
+        finally
+        {
+            _isLoadingProperties = false;
+            StateHasChanged();
+        }
     }
     
     private async Task HandleHoverPick(ViewerEventArgs e)
@@ -465,6 +455,58 @@
         {
             await _xbimViewer.ShowAsync(ViewerConstants.ViewType.Top);
         }
+    }
+
+    private async Task RefreshHierarchy()
+    {
+        if (_xbimViewer == null) return;
+        
+        _isLoadingHierarchy = true;
+        StateHasChanged();
+        
+        try
+        {
+            _productTypes = await _xbimViewer.GetProductTypesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading hierarchy: {ex.Message}");
+        }
+        finally
+        {
+            _isLoadingHierarchy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleHierarchyProductSelected((int ProductId, int ModelId) selection)
+    {
+        if (_xbimViewer == null) return;
+        
+        var isSelected = _selectedProductSet.Contains(selection);
+        
+        if (isSelected)
+        {
+            await _xbimViewer.UnhighlightElementsAsync(new[] { selection.ProductId }, selection.ModelId);
+            _selectedProductSet.Remove(selection);
+        }
+        else
+        {
+            await _xbimViewer.HighlightElementsAsync(new[] { selection.ProductId }, selection.ModelId);
+            _selectedProductSet.Add(selection);
+        }
+        
+        StateHasChanged();
+    }
+
+    private string GetModelName(int modelId)
+    {
+        var models = _xbimViewer?.GetLoadedModels();
+        if (models != null && models.TryGetValue(modelId, out var model))
+        {
+            return model.Name;
+        }
+        return $"Model {modelId}";
     }
 
     public void Dispose()
