@@ -12,8 +12,10 @@ A Blazor component library that wraps the @xbim/viewer JavaScript library for us
 ## Project Structure
 
 - **Xbim.WexBlazor**: The component library project
-  - **Components/**: Blazor components
+  - **Components/**: Blazor components (Viewer, Sidebar, Panels, etc.)
   - **Interop/**: JavaScript interop services
+  - **Models/**: Data models and enums
+  - **Services/**: Services (Theme, Properties, IFC processing, etc.)
   - **wwwroot/js/**: JavaScript interop modules
   - **wwwroot/lib/**: Third-party libraries (xBIM Viewer)
 
@@ -29,6 +31,8 @@ A Blazor component library that wraps the @xbim/viewer JavaScript library for us
 - **Direct IFC file loading in Blazor Server applications** - automatically converts IFC files to wexBIM format
 - Extensible properties system for displaying element properties from multiple sources
 - Theme support (light/dark) with customizable accent colors
+- **Sidebar docking system** - dockable panels with overlay and docked modes
+- **Model hierarchy panel** - view product types and spatial structure of loaded models
 
 ## Installation
 
@@ -195,41 +199,56 @@ Add the `PropertiesPanel` component to display properties:
 
 ### Custom Property Source Example
 
-Create a custom property source for integration with databases or APIs:
+Create a custom property source for integration with databases or APIs using `CustomPropertySource`:
 
 ```csharp
-var customSource = new CustomPropertySource(
-    propertyProvider: async (query, ct) =>
+// In Program.cs
+var propertyService = new PropertyService();
+
+var apiPropertySource = new CustomPropertySource(
+    async (query, ct) =>
     {
+        // Simulate API latency
+        await Task.Delay(100, ct);
+        
         // Fetch properties from your database/API
-        var data = await myDatabase.GetElementPropertiesAsync(query.ElementId);
+        var data = await myApiClient.GetElementPropertiesAsync(query.ElementId, query.ModelId);
         
         return new ElementProperties
         {
             ElementId = query.ElementId,
             ModelId = query.ModelId,
             Name = data.Name,
+            TypeName = data.TypeName,
             Groups = new List<PropertyGroup>
             {
                 new PropertyGroup
                 {
-                    Name = "Custom Properties",
-                    Source = "Database",
+                    Name = "API Data",
+                    Source = "REST API",
                     Properties = data.Properties.Select(p => new PropertyValue
                     {
-                        Name = p.Key,
-                        Value = p.Value
+                        Name = p.Name,
+                        Value = p.Value,
+                        ValueType = p.ValueType
                     }).ToList()
                 }
             }
         };
     },
-    sourceType: "Database",
-    name: "My Database Properties"
+    sourceType: "REST API",
+    name: "API Properties"
 );
 
-propertyService.RegisterSource(customSource);
+propertyService.RegisterSource(apiPropertySource);
+builder.Services.AddSingleton(propertyService);
 ```
+
+The `CustomPropertySource` constructor accepts:
+- `propertyProvider`: An async function that takes a `PropertyQuery` and returns `ElementProperties?`
+- `sourceType`: A string identifier for the source (e.g., "Database", "REST API")
+- `modelIds`: Optional array of model IDs this source supports (empty = all models)
+- `name`: Display name for the source
 
 ### In-Memory Properties (Dictionary Source)
 
@@ -245,6 +264,112 @@ dictSource.AddProperty(elementId: 123, modelId: 0,
     value: "Approved");
 
 propertyService.RegisterSource(dictSource);
+```
+
+## Sidebar Docking System
+
+The library includes a flexible sidebar system that allows you to dock panels alongside the viewer or display them as overlays.
+
+### Using ViewerSidebar
+
+The `ViewerSidebar` component provides a dockable sidebar with icon-based panel management:
+
+```razor
+<ViewerSidebar Position="SidebarPosition.Left" DefaultDocked="false">
+    <SidebarPanel Title="Properties" Icon="bi-list-ul" IsOpen="@_showProperties">
+        <PropertiesPanel 
+            ShowHeader="false"
+            IsVisible="true"
+            Properties="@_currentProperties" />
+    </SidebarPanel>
+    
+    <SidebarPanel Title="Hierarchy" Icon="bi-diagram-3" IsOpen="@_showHierarchy">
+        <ModelHierarchyPanel 
+            ShowHeader="false"
+            IsVisible="true"
+            ProductTypes="@_productTypes"
+            SpatialStructure="@_spatialStructure" />
+    </SidebarPanel>
+</ViewerSidebar>
+```
+
+### Sidebar Features
+
+- **Docked Mode**: Panels are docked alongside the viewer, resizing the canvas automatically
+- **Overlay Mode**: Panels appear as overlays on top of the viewer
+- **Icon Bar**: Quick access to panels via icon buttons
+- **Single Panel**: Only one panel is visible at a time
+- **Dynamic Resizing**: Canvas automatically adjusts when panels are docked
+
+### SidebarPanel Component
+
+Each panel within the sidebar is wrapped in a `SidebarPanel` component:
+
+```razor
+<SidebarPanel Title="My Panel" Icon="bi-gear" IsOpen="@_isOpen">
+    <!-- Your panel content -->
+</SidebarPanel>
+```
+
+The `SidebarPanel` provides:
+- Toggle dock/overlay button
+- Close button
+- Automatic registration with parent `ViewerSidebar`
+
+## Model Hierarchy Panel
+
+The `ModelHierarchyPanel` component displays the structure of loaded models in two views:
+
+### Product Types View
+
+Shows all product types (IFC entity types) found in the model, organized by type. Clicking on a product type highlights all elements of that type in the viewer.
+
+### Spatial Structure View
+
+Displays the spatial hierarchy of the model (Project → Site → Building → Storey → Space). This view is only available when loading IFC files, as the spatial structure is extracted from the IFC model.
+
+### Using ModelHierarchyPanel
+
+```razor
+<ModelHierarchyPanel 
+    IsVisible="@_showHierarchy"
+    ProductTypes="@_productTypes"
+    SpatialStructure="@_spatialStructure"
+    OnProductSelected="HandleProductSelected"
+    ShowHeader="true" />
+```
+
+### Getting Product Types
+
+Product types are retrieved from the viewer after a model is loaded:
+
+```csharp
+private async Task LoadModel()
+{
+    var loadedModel = await Viewer.LoadModelFromUrlAsync("model.wexbim");
+    if (loadedModel != null)
+    {
+        var productTypes = await Viewer.GetProductTypesAsync(loadedModel.Id);
+        _productTypes = productTypes?.ToList() ?? new List<ProductTypeInfo>();
+    }
+}
+```
+
+### Getting Spatial Structure (IFC Only)
+
+For IFC models, use `IfcHierarchyService` to extract spatial structure:
+
+```csharp
+@inject IfcHierarchyService IfcHierarchyService
+
+private async Task RefreshHierarchy()
+{
+    if (Viewer?.LoadedModels?.FirstOrDefault()?.IfcModel != null)
+    {
+        var model = Viewer.LoadedModels.First().IfcModel;
+        _spatialStructure = await IfcHierarchyService.GetSpatialStructureAsync(model);
+    }
+}
 ```
 
 ## Loading IFC Files Directly
