@@ -112,8 +112,9 @@
     
     private async Task UpdateViewerPaddingAsync()
     {
-        if (!_isInitialized) return;
-        
+        if (!_isInitialized)
+            return;
+
         try
         {
             var openPanel = _panels.FirstOrDefault(p => p.IsOpen);

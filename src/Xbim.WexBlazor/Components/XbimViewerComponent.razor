@@ -18,6 +18,7 @@
 @code {
     private XbimViewerInterop? _xbimViewer;
     private string? _viewerId;
+    private bool _isInteractive = false;
     private bool _viewerInitialized = false;
     private bool _modelLoaded = false;
     private DotNetObjectReference<XbimViewerComponent>? _dotNetHelper;
@@ -134,51 +135,48 @@
     public event Action<ViewerEventArgs>? Pick;
 
     /// <summary>
-    /// Initialize the viewer when the component is initialized
-    /// </summary>
-    protected override async Task OnInitializedAsync()
-    {
-        _xbimViewer = new XbimViewerInterop(JSRuntime);
-        _dotNetHelper = DotNetObjectReference.Create(this);
-        await base.OnInitializedAsync();
-    }
-
-    /// <summary>
     /// Initialize the viewer and load the model when the component is rendered
     /// </summary>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await InitializeViewerAsync();
+            _isInteractive = true;
+            await InitializeViewerIfNeededAsync();
         }
     }
 
     /// <summary>
     /// Initializes the xBIM viewer
     /// </summary>
-    private async Task InitializeViewerAsync()
+    private async Task InitializeViewerIfNeededAsync()
     {
-        if (_xbimViewer != null && !_viewerInitialized && _dotNetHelper != null)
+        if (_viewerInitialized)
+            return;
+
+        if (!_isInteractive)
+            return;
+
+        _xbimViewer = new XbimViewerInterop(JSRuntime);
+        await _xbimViewer.InitializeAsync();
+
+        _dotNetHelper = DotNetObjectReference.Create(this);
+
+        _viewerId = await _xbimViewer.InitViewerAsync(Id);
+        
+        if (!string.IsNullOrEmpty(_viewerId))
         {
-            // Initialize the viewer
-            _viewerId = await _xbimViewer.InitViewerAsync(Id);
+            _viewerInitialized = true;
             
-            if (!string.IsNullOrEmpty(_viewerId))
+            await _xbimViewer.SetBackgroundColorAsync(_viewerId, BackgroundColor);
+            
+            await RegisterEventHandlersAsync();
+            
+            await OnViewerInitialized.InvokeAsync(_viewerId);
+            
+            if (!string.IsNullOrEmpty(ModelUrl))
             {
-                _viewerInitialized = true;
-                
-                await _xbimViewer.SetBackgroundColorAsync(_viewerId, BackgroundColor);
-                
-                // Register event handlers
-                await RegisterEventHandlersAsync();
-                
-                await OnViewerInitialized.InvokeAsync(_viewerId);
-                
-                if (!string.IsNullOrEmpty(ModelUrl))
-                {
-                    await LoadModelAsync(ModelUrl);
-                }
+                await LoadModelAsync(ModelUrl);
             }
         }
     }
@@ -214,7 +212,7 @@
     /// Callback method invoked by JavaScript when viewer events occur
     /// </summary>
     [JSInvokable]
-    public async Task OnViewerEvent(ViewerEventArgs eventArgs)
+            public async Task OnViewerEvent(ViewerEventArgs eventArgs)
     {
         try
         {
@@ -299,11 +297,11 @@
     /// </summary>
     public async Task<LoadedModel?> LoadModelFromBytesAsync(byte[] modelData, string? fileName = null)
     {
-        if (JSRuntime == null) return null;
+        if (!_isInteractive || !_viewerInitialized || JSRuntime == null)
+            return null;
 
         try
         {
-            // Create blob URL from bytes
             var blobUrl = await JSRuntime.InvokeAsync<string>("createBlobUrl", modelData, "application/octet-stream");
             return await LoadModelAsync(blobUrl, fileName ?? "model.wexbim", ModelSourceType.LocalFile);
         }

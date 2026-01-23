@@ -222,6 +222,7 @@
     private string _panelId = $"properties-panel-{Guid.NewGuid():N}";
     private IJSObjectReference? _jsModule;
     private IJSObjectReference? _dragInstance;
+    private bool _isInteractive = false;
     
     private ElementProperties? _internalProperties;
     private bool _internalIsLoading = false;
@@ -393,7 +394,12 @@
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (AllowDrag && IsVisible)
+        if (firstRender)
+        {
+            _isInteractive = true;
+        }
+
+        if (_isInteractive && AllowDrag && IsVisible)
         {
             try
             {
@@ -403,7 +409,6 @@
                         "import", "./_content/Xbim.WexBlazor/js/propertiesPanelDrag.js");
                 }
                 
-                // Initialize or re-initialize drag if needed
                 await _jsModule.InvokeVoidAsync("initializeDrag", _panelId);
             }
             catch (Exception ex)
