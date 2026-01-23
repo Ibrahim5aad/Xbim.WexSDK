@@ -61,62 +61,44 @@
             else
             {
                 <div class="hierarchy-tree">
-                    @foreach (var group in _productTypes.GroupBy(p => p.ModelId))
+                    @foreach (var typeGroup in _productTypes.GroupBy(p => p.DisplayName).OrderBy(g => g.Key))
                     {
-                        var modelId = group.Key;
-                        var modelName = GetModelName(modelId);
-                        var hasMultipleModels = _productTypes.Select(p => p.ModelId).Distinct().Count() > 1;
-                        var isModelExpanded = !hasMultipleModels || _expandedModels.Contains(modelId);
-                        <div class="tree-model-group">
-                            @if (hasMultipleModels)
+                        var typeName = typeGroup.Key;
+                        var allTypeInfos = typeGroup.ToList();
+                        var allProducts = allTypeInfos.SelectMany(t => t.ProductIds.Select(id => (ProductId: id, ModelId: t.ModelId))).ToList();
+                        var typeKey = typeName;
+                        var isExpanded = _expandedTypes.Contains(typeKey);
+                        var firstTypeInfo = allTypeInfos.First();
+                        
+                        <div class="tree-node @(isExpanded ? "expanded" : "")">
+                            <div class="tree-node-header" @onclick="() => ToggleTypeExpandByName(typeName)">
+                                <button class="tree-expand-btn">
+                                    <i class="bi bi-@(isExpanded ? "chevron-down" : "chevron-right")"></i>
+                                </button>
+                                <i class="bi @firstTypeInfo.Icon tree-node-icon"></i>
+                                <span class="tree-node-name">@typeName</span>
+                                <span class="tree-node-count">@allProducts.Count</span>
+                            </div>
+                            @if (isExpanded)
                             {
-                                <div class="tree-model-header @(isModelExpanded ? "expanded" : "")" @onclick="() => ToggleModelExpand(modelId)">
-                                    <button class="tree-expand-btn">
-                                        <i class="bi bi-@(isModelExpanded ? "chevron-down" : "chevron-right")"></i>
-                                    </button>
-                                    <i class="bi bi-file-earmark-binary"></i>
-                                    <span class="tree-model-name">@modelName</span>
-                                    <span class="tree-node-count">@group.Sum(t => t.ProductIds.Length)</span>
-                                </div>
-                            }
-                            @if (isModelExpanded)
-                            {
-                            <div class="@(hasMultipleModels ? "tree-model-group-content" : "")">
-                            @foreach (var typeInfo in group.OrderBy(t => t.DisplayName))
-                            {
-                                <div class="tree-node @(_expandedTypes.Contains(GetTypeKey(typeInfo)) ? "expanded" : "")">
-                                    <div class="tree-node-header" @onclick="() => ToggleTypeExpand(typeInfo)">
-                                        <button class="tree-expand-btn">
-                                            <i class="bi bi-@(_expandedTypes.Contains(GetTypeKey(typeInfo)) ? "chevron-down" : "chevron-right")"></i>
-                                        </button>
-                                        <i class="bi @typeInfo.Icon tree-node-icon"></i>
-                                        <span class="tree-node-name">@typeInfo.DisplayName</span>
-                                        <span class="tree-node-count">@typeInfo.ProductIds.Length</span>
-                                    </div>
-                                    @if (_expandedTypes.Contains(GetTypeKey(typeInfo)))
+                                <div class="tree-node-children">
+                                    @foreach (var (productId, modelId) in allProducts.Take(MaxProductsPerType))
                                     {
-                                        <div class="tree-node-children">
-                                            @foreach (var productId in typeInfo.ProductIds.Take(MaxProductsPerType))
-                                            {
-                                                <div class="tree-leaf @(_selectedProducts.Contains((productId, typeInfo.ModelId)) ? "selected" : "")"
-                                                     @onclick="() => HandleProductClick(productId, typeInfo.ModelId)"
-                                                     @onclick:stopPropagation="true">
-                                                    <i class="bi bi-box tree-leaf-icon"></i>
-                                                    <span class="tree-leaf-name">#@productId</span>
-                                                </div>
-                                            }
-                                            @if (typeInfo.ProductIds.Length > MaxProductsPerType)
-                                            {
-                                                <div class="tree-more">
-                                                    <i class="bi bi-three-dots"></i>
-                                                    <span>+@(typeInfo.ProductIds.Length - MaxProductsPerType) more</span>
-                                                </div>
-                                            }
+                                        <div class="tree-leaf @(_selectedProducts.Contains((productId, modelId)) ? "selected" : "")"
+                                             @onclick="() => HandleProductClick(productId, modelId)"
+                                             @onclick:stopPropagation="true">
+                                            <i class="bi bi-box tree-leaf-icon"></i>
+                                            <span class="tree-leaf-name">#@productId</span>
+                                        </div>
+                                    }
+                                    @if (allProducts.Count > MaxProductsPerType)
+                                    {
+                                        <div class="tree-more">
+                                            <i class="bi bi-three-dots"></i>
+                                            <span>+@(allProducts.Count - MaxProductsPerType) more</span>
                                         </div>
                                     }
                                 </div>
-                            }
-                            </div>
                             }
                         </div>
                     }
@@ -328,6 +310,14 @@
             _expandedTypes.Add(key);
     }
 
+    private void ToggleTypeExpandByName(string typeName)
+    {
+        if (_expandedTypes.Contains(typeName))
+            _expandedTypes.Remove(typeName);
+        else
+            _expandedTypes.Add(typeName);
+    }
+
     private async Task HandleProductClick(int productId, int modelId)
     {
         if (Viewer == null) return;
@@ -419,8 +409,8 @@
     public void Hide() => IsVisible = false;
     public void ExpandAll() 
     {
-        foreach (var type in _productTypes)
-            _expandedTypes.Add(GetTypeKey(type));
+        foreach (var typeName in _productTypes.Select(t => t.DisplayName).Distinct())
+            _expandedTypes.Add(typeName);
     }
     public void CollapseAll() => _expandedTypes.Clear();
     public void ClearSelection() => _selectedProducts.Clear();
