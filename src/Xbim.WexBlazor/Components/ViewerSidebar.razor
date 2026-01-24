@@ -110,7 +110,7 @@
         await SetDocked(!_isDocked);
     }
     
-    private async Task UpdateViewerPaddingAsync()
+    internal async Task UpdateViewerPaddingAsync()
     {
         if (!_isInitialized)
             return;

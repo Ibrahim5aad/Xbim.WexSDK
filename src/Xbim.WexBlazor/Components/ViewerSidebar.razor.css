@@ -165,3 +165,30 @@
 ::deep .sidebar-panel-content > * {
     height: 100%;
 }
+
+::deep .sidebar-panel-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: transparent;
+    cursor: ew-resize;
+    z-index: 100;
+    transition: background 0.15s ease;
+}
+
+::deep .sidebar-panel-resize-handle:hover {
+    background: var(--xbim-accent-primary, #4da3ff);
+}
+
+::deep .sidebar-panel-resize-handle.resize-right {
+    right: -2px;
+}
+
+::deep .sidebar-panel-resize-handle.resize-left {
+    left: -2px;
+}
+
+::deep .sidebar-panel.docked {
+    position: relative;
+}

@@ -181,6 +181,14 @@ public static class ViewerBuiltInButtons
     }
 
     /// <summary>
+    /// Creates a hide/unhide toggle button for highlighted elements
+    /// </summary>
+    public static ToolbarToggleButton CreateHideToggle(XbimViewerComponent viewer)
+    {
+        return CreateHideToggle(viewer, () => viewer.HighlightedElementIds, null);
+    }
+
+    /// <summary>
     /// Creates a hide/unhide toggle button for selected elements
     /// </summary>
     public static ToolbarToggleButton CreateHideToggle(
@@ -212,6 +220,14 @@ public static class ViewerBuiltInButtons
                 }
             })
         };
+    }
+
+    /// <summary>
+    /// Creates an isolate/unisolate toggle button for highlighted elements
+    /// </summary>
+    public static ToolbarToggleButton CreateIsolateToggle(XbimViewerComponent viewer)
+    {
+        return CreateIsolateToggle(viewer, () => viewer.HighlightedElementIds, null);
     }
 
     /// <summary>

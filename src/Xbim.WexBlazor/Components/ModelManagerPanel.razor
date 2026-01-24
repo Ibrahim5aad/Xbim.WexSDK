@@ -1,4 +1,5 @@
 @using Xbim.WexBlazor.Models
+@implements IDisposable
 
 @if (IsVisible)
 {
@@ -90,12 +91,13 @@
 
 @code {
     private bool IsMinimized { get; set; } = false;
+    private bool _subscribedToViewer = false;
+    
+    [CascadingParameter]
+    public XbimViewerComponent? Viewer { get; set; }
     
     [Parameter]
     public bool IsVisible { get; set; } = true;
-
-    [Parameter]
-    public List<LoadedModel> Models { get; set; } = new();
 
     [Parameter]
     public ModelManagerPosition Position { get; set; } = ModelManagerPosition.TopRight;
@@ -105,9 +107,9 @@
 
     [Parameter]
     public bool ShowActions { get; set; } = true;
-
+    
     [Parameter]
-    public XbimViewerComponent? Viewer { get; set; }
+    public bool AutoZoomFit { get; set; } = true;
 
     [Parameter]
     public EventCallback OnClose { get; set; }
@@ -123,6 +125,8 @@
 
     [Parameter]
     public EventCallback OnAfterUnloadAll { get; set; }
+    
+    private List<LoadedModel> Models => Viewer?.GetLoadedModels().Values.ToList() ?? new();
 
     private string PositionClass => Position switch
     {
@@ -132,6 +136,20 @@
         ModelManagerPosition.BottomRight => "position-bottom-right",
         _ => "position-top-right"
     };
+    
+    protected override void OnParametersSet()
+    {
+        if (Viewer != null && !_subscribedToViewer)
+        {
+            Viewer.ModelChanged += OnModelChanged;
+            _subscribedToViewer = true;
+        }
+    }
+    
+    private void OnModelChanged(ModelChangedEventArgs args)
+    {
+        InvokeAsync(StateHasChanged);
+    }
 
     private void ToggleMinimize()
     {
@@ -148,12 +166,13 @@
         if (Viewer != null)
         {
             await Viewer.ToggleModelAsync(model.Id);
+            
+            if (AutoZoomFit)
+                await Viewer.ZoomFitAsync();
         }
         
         if (OnAfterToggleVisibility.HasDelegate)
-        {
             await OnAfterToggleVisibility.InvokeAsync(model);
-        }
     }
 
     private async Task HandleUnload(LoadedModel model)
@@ -161,12 +180,13 @@
         if (Viewer != null)
         {
             await Viewer.UnloadModelAsync(model.Id);
+            
+            if (AutoZoomFit)
+                await Viewer.ZoomFitAsync();
         }
         
         if (OnAfterUnload.HasDelegate)
-        {
             await OnAfterUnload.InvokeAsync(model);
-        }
     }
 
     private async Task HandleUnloadAll()
@@ -174,12 +194,13 @@
         if (Viewer != null)
         {
             await Viewer.UnloadAllModelsAsync();
+            
+            if (AutoZoomFit)
+                await Viewer.ZoomFitAsync();
         }
         
         if (OnAfterUnloadAll.HasDelegate)
-        {
             await OnAfterUnloadAll.InvokeAsync();
-        }
     }
 
     private string GetSourceTypeIcon(ModelSourceType sourceType) => sourceType switch
@@ -201,6 +222,14 @@
             len /= 1024;
         }
         return $"{len:0.##} {sizes[order]}";
+    }
+    
+    public void Dispose()
+    {
+        if (Viewer != null && _subscribedToViewer)
+        {
+            Viewer.ModelChanged -= OnModelChanged;
+        }
     }
 }
 

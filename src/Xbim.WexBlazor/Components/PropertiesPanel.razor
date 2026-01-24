@@ -213,10 +213,11 @@
     public EventCallback<bool> OnVisibilityChanged { get; set; }
     
     /// <summary>
-    /// Whether to automatically highlight/unhighlight elements on pick
+    /// Whether to automatically highlight/unhighlight elements on pick.
+    /// Note: XbimViewerComponent.AutoToggleHighlight handles this by default.
     /// </summary>
     [Parameter]
-    public bool AutoHighlightOnPick { get; set; } = true;
+    public bool AutoHighlightOnPick { get; set; } = false;
     
     private bool IsMinimized { get; set; } = false;
     private string _panelId = $"properties-panel-{Guid.NewGuid():N}";
@@ -238,6 +239,7 @@
         if (Viewer != null && !_isSubscribed)
         {
             Viewer.Pick += OnPick;
+            Viewer.SelectionChanged += OnSelectionChanged;
             _isSubscribed = true;
         }
         base.OnParametersSet();
@@ -250,6 +252,20 @@
         InvokeAsync(async () =>
         {
             await HandlePick(args);
+            StateHasChanged();
+        });
+    }
+    
+    private void OnSelectionChanged()
+    {
+        if (Viewer == null) return;
+        
+        InvokeAsync(() =>
+        {
+            if (!Viewer.HasHighlightedElements)
+            {
+                ClearProperties();
+            }
             StateHasChanged();
         });
     }
@@ -268,16 +284,34 @@
             if (isHighlighted)
             {
                 await Viewer.UnhighlightElementsAsync(new[] { elementId }, modelId);
-                _internalProperties = null;
-                _currentElementId = null;
-                _currentModelId = null;
+                ClearProperties();
                 return;
             }
             
             await Viewer.HighlightElementsAsync(new[] { elementId }, modelId);
+            await FetchPropertiesAsync(elementId, modelId);
         }
-        
-        await FetchPropertiesAsync(elementId, modelId);
+        else
+        {
+            var isHighlighted = await Viewer.IsElementHighlightedAsync(elementId, modelId);
+            
+            if (isHighlighted)
+            {
+                await FetchPropertiesAsync(elementId, modelId);
+            }
+            else
+            {
+                ClearProperties();
+            }
+        }
+    }
+    
+    public void ClearProperties()
+    {
+        _internalProperties = null;
+        _currentElementId = null;
+        _currentModelId = null;
+        StateHasChanged();
     }
     
     private async Task FetchPropertiesAsync(int elementId, int modelId)
@@ -303,14 +337,6 @@
             _internalIsLoading = false;
             StateHasChanged();
         }
-    }
-    
-    public void ClearProperties()
-    {
-        _internalProperties = null;
-        _currentElementId = null;
-        _currentModelId = null;
-        StateHasChanged();
     }
     
     private async Task ToggleVisibility()
@@ -423,6 +449,7 @@
         if (Viewer != null && _isSubscribed)
         {
             Viewer.Pick -= OnPick;
+            Viewer.SelectionChanged -= OnSelectionChanged;
         }
     }
     

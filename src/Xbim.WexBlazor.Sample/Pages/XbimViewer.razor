@@ -21,34 +21,17 @@
                          ContainerStyle="width: 100%; height: 100%; position: relative;"
                          OnViewerInitialized="HandleViewerInitialized"
                          OnModelLoaded="HandleModelLoaded"
-                         OnLoaded="HandleLoaded"
-                         OnPick="HandlePick"
-                         OnHoverPick="HandleHoverPick"
                          >
 
-        <FileLoaderPanel 
-                         IsVisible="@_showFileLoader"
-                         AllowClose="true"
+        <FileLoaderPanel @bind-IsVisible="_showFileLoader"
                          AllowIfcFiles="false"
                          DemoModels="@_demoModels"
-                         OnFileLoaded="HandleFileDataLoaded"
-                         OnUrlLoaded="HandleUrlModelLoad"
-                         OnClose="HandleLoaderClose"
                          OnError="HandleLoaderError" />
 
         @if (_xbimViewer != null)
         {
             <ModelManagerPanel IsVisible="@_showModelManager"
-                               Viewer="@_xbimViewer"
-                               Models="@GetLoadedModelsList()"
-                               Position="ModelManagerPosition.TopRight"
-                               AllowClose="true"
-                               ShowActions="true"
-                               OnClose="HandleModelManagerClose"
-                               OnLoadModel="ShowFileLoader"
-                               OnAfterToggleVisibility="HandleAfterToggleModel"
-                               OnAfterUnload="HandleAfterUnloadModel"
-                               OnAfterUnloadAll="HandleAfterUnloadAllModels" />
+                               OnLoadModel="ShowFileLoader" />
 
             <ViewerToolbar Items="@_toolbarItems"
                            Position="@_toolbarPosition"
@@ -56,7 +39,7 @@
 
             <ViewerSidebar Position="SidebarPosition.Left">
                     <SidebarPanel Icon="bi-info-circle" Title="Properties" @bind-IsOpen="_showPropertiesPanel" Width="320">
-                        <PropertiesPanel ShowHeader="false" AutoHighlightOnPick="false" />
+                        <PropertiesPanel ShowHeader="false" />
                     </SidebarPanel>
                     <SidebarPanel Icon="bi-diagram-3" Title="Hierarchy" @bind-IsOpen="_showHierarchyPanel" Width="300">
                         <ModelHierarchyPanel ShowHeader="false" />
@@ -72,19 +55,12 @@
     private bool _showModelManager = true;
     private bool _showPropertiesPanel = false;
     private bool _showHierarchyPanel = false;
-    private List<SelectedElement> _selectedElements = new();
     
-    // Plugin tracking
     private bool _gridActive = false;
     private bool _interactivePluginsInitialized = false;
     private SectionBoxPlugin? _sectionBoxPlugin;
     private GridPlugin? _gridPlugin;
     private ClippingPlanePlugin? _clippingPlanePlugin;
-
-    private List<LoadedModel> GetLoadedModelsList()
-    {
-        return _xbimViewer?.GetLoadedModels().Values.ToList() ?? new List<LoadedModel>();
-    }
     
     private List<ToolbarItemBase> _toolbarItems = new();
     private ToolbarPosition _toolbarPosition = ToolbarPosition.Bottom;
@@ -192,8 +168,8 @@
             ViewerBuiltInButtons.CreateViewsDropdown(_xbimViewer),
             ViewerBuiltInButtons.CreateNavigationButtons(_xbimViewer),
             ViewerBuiltInButtons.CreateXRayToggle(_xbimViewer),
-            ViewerBuiltInButtons.CreateHideToggle(_xbimViewer, GetSelectedElementIds, StateHasChanged),
-            ViewerBuiltInButtons.CreateIsolateToggle(_xbimViewer, GetSelectedElementIds, StateHasChanged),
+            ViewerBuiltInButtons.CreateHideToggle(_xbimViewer),
+            ViewerBuiltInButtons.CreateIsolateToggle(_xbimViewer),
             ViewerBuiltInButtons.CreateClearSelectionButton(_xbimViewer),
             ViewerBuiltInButtons.CreateSectionBoxButtons(_xbimViewer, () => _sectionBoxPlugin, "Box", StateHasChanged),
             ViewerBuiltInButtons.CreateClippingPlaneButtons(_xbimViewer, () => _clippingPlanePlugin, "Plane", StateHasChanged),
@@ -208,11 +184,6 @@
             : "bi-moon-stars";
     }
 
-    private int[] GetSelectedElementIds()
-    {
-        return _selectedElements.Select(e => e.Id).ToArray();
-    }
-    
     private async Task ToggleTheme()
     {
         ThemeService.ToggleTheme();
@@ -241,7 +212,7 @@
                 _interactivePluginsInitialized = true;
             }
             
-            await ZoomFit();
+            await _xbimViewer.ZoomFitAsync();
         }
         await InvokeAsync(StateHasChanged);
     }
@@ -252,104 +223,9 @@
         StateHasChanged();
     }
 
-    private void HandleLoaderClose()
-    {
-        _showFileLoader = false;
-        StateHasChanged();
-    }
-
-    private async Task HandleFileDataLoaded(FileLoadedEventArgs args)
-    {
-        if (_xbimViewer == null) return;
-
-        try
-        {
-            // Check if this is an IFC file
-            if (args.Format == ModelFormat.Ifc || args.Format == ModelFormat.IfcZip)
-            {
-                // IFC files require server-side processing
-                // In WebAssembly, we cannot process IFC files directly
-                // You need to either:
-                // 1. Use the Blazor Server sample (which supports IFC processing)
-                // 2. Create a server API endpoint to process IFC files
-                // 3. Pre-convert IFC files to wexbim format
-                await HandleLoaderError("IFC files cannot be processed in WebAssembly. Please use the Blazor Server sample or pre-convert to wexbim format.");
-                return;
-            }
-            
-            // Load wexbim file directly
-            var loadedModel = await _xbimViewer.LoadModelFromBytesAsync(args.FileData, args.FileName);
-            if (loadedModel != null)
-            {
-                loadedModel.SizeBytes = args.FileSize;
-                loadedModel.OriginalFormat = args.Format;
-                _showFileLoader = false;
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading file: {ex.Message}");
-            await HandleLoaderError($"Error loading file: {ex.Message}");
-        }
-    }
-
-    private async Task HandleUrlModelLoad(string url)
-    {
-        if (_xbimViewer == null) return;
-
-        try
-        {
-            var loadedModel = await _xbimViewer.LoadModelAsync(url);
-            if (loadedModel != null)
-            {
-                _showFileLoader = false;
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading from URL: {ex.Message}");
-        }
-    }
-
-    private async Task HandleLoaderError(string error)
+    private void HandleLoaderError(string error)
     {
         Console.WriteLine($"Loader error: {error}");
-        await Task.CompletedTask;
-    }
-
-    // Model Manager handlers
-    private void HandleModelManagerClose()
-    {
-        _showModelManager = false;
-        StateHasChanged();
-    }
-
-    private async Task HandleAfterToggleModel(LoadedModel model)
-    {
-        await ZoomFit();
-        StateHasChanged();
-    }
-
-    private async Task HandleAfterUnloadModel(LoadedModel model)
-    {
-        await ZoomFit();
-        StateHasChanged();
-    }
-
-    private async Task HandleAfterUnloadAllModels()
-    {
-        await ZoomFit();
-        StateHasChanged();
-    }
-    
-    private async Task ZoomFit()
-    {
-        if (_xbimViewer != null)
-        {
-            await _xbimViewer.ZoomFitAsync();
-        }
     }
     
     private async Task Reset()
@@ -360,53 +236,6 @@
         }
     }
     
-    private async Task GetSelection()
-    {
-        if (_xbimViewer != null)
-        {
-            var selected = await _xbimViewer.GetSelectedElementsAsync();
-            _selectedElements = selected.ToList();
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-    
-    private async Task HandlePick(ViewerEventArgs e)
-    {
-        if (e.Id.HasValue && _xbimViewer != null)
-        {
-            var isHighlighted = await _xbimViewer.IsElementHighlightedAsync(e.Id.Value, e.Model);
-            
-            if (isHighlighted)
-            {
-                await _xbimViewer.UnhighlightElementsAsync(new[] { e.Id.Value }, e.Model);
-            }
-            else
-            {
-                await _xbimViewer.HighlightElementsAsync(new[] { e.Id.Value }, e.Model);
-            }
-            
-            await GetSelection();
-        }
-        
-        await InvokeAsync(StateHasChanged);
-    }
-    
-    private async Task HandleHoverPick(ViewerEventArgs e)
-    {
-        if (e.Id.HasValue)
-        {
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private async Task HandleLoaded(ViewerEventArgs e)
-    {
-        if (_xbimViewer != null)
-        {
-            //await _xbimViewer.ShowAsync(ViewerConstants.ViewType.Top);
-        }
-    }
-
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= ApplyTheme;

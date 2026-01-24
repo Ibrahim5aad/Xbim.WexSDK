@@ -24,6 +24,13 @@
     private DotNetObjectReference<XbimViewerComponent>? _dotNetHelper;
     private readonly Dictionary<int, LoadedModel> _loadedModels = new();
     private readonly Dictionary<string, ViewerPlugin> _plugins = new();
+    private readonly HashSet<(int ElementId, int ModelId)> _highlightedElements = new();
+    
+    public int[] HighlightedElementIds => _highlightedElements.Select(e => e.ElementId).ToArray();
+    public IReadOnlyCollection<(int ElementId, int ModelId)> HighlightedElements => _highlightedElements;
+    public bool HasHighlightedElements => _highlightedElements.Count > 0;
+    
+    public event Action? SelectionChanged;
     
     /// <summary>
     /// Unique ID for the viewer canvas
@@ -73,6 +80,12 @@
     /// </summary>
     [Parameter]
     public EventCallback<bool> OnModelLoaded { get; set; }
+
+    /// <summary>
+    /// When true, automatically toggles highlight on picked elements (default: true)
+    /// </summary>
+    [Parameter]
+    public bool AutoToggleHighlight { get; set; } = true;
 
     /// <summary>
     /// Event raised when an element is clicked (pick event)
@@ -192,7 +205,7 @@
         if (OnLoaded.HasDelegate)
             await _xbimViewer.AddEventListenerAsync(_viewerId, "loaded", _dotNetHelper);
 
-        if (OnPick.HasDelegate)
+        if (AutoToggleHighlight || OnPick.HasDelegate || Pick != null)
             await _xbimViewer.AddEventListenerAsync(_viewerId, "pick", _dotNetHelper);
 
         if (OnHoverPick.HasDelegate)
@@ -225,6 +238,14 @@
                     break;
 
                 case "pick":
+                    if (AutoToggleHighlight && eventArgs.Id.HasValue)
+                    {
+                        var isHighlighted = await IsElementHighlightedAsync(eventArgs.Id.Value, eventArgs.Model);
+                        if (isHighlighted)
+                            await UnhighlightElementsAsync(new[] { eventArgs.Id.Value }, eventArgs.Model);
+                        else
+                            await HighlightElementsAsync(new[] { eventArgs.Id.Value }, eventArgs.Model);
+                    }
                     Pick?.Invoke(eventArgs);
                     if (OnPick.HasDelegate)
                         await OnPick.InvokeAsync(eventArgs);
@@ -640,7 +661,15 @@
     {
         if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.HighlightElementsAsync(_viewerId, elementIds, modelId);
+            var result = await _xbimViewer.HighlightElementsAsync(_viewerId, elementIds, modelId);
+            if (result)
+            {
+                var mid = modelId ?? 0;
+                foreach (var id in elementIds)
+                    _highlightedElements.Add((id, mid));
+                SelectionChanged?.Invoke();
+            }
+            return result;
         }
         
         return false;
@@ -653,7 +682,15 @@
     {
         if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.UnhighlightElementsAsync(_viewerId, elementIds, modelId);
+            var result = await _xbimViewer.UnhighlightElementsAsync(_viewerId, elementIds, modelId);
+            if (result)
+            {
+                var mid = modelId ?? 0;
+                foreach (var id in elementIds)
+                    _highlightedElements.Remove((id, mid));
+                SelectionChanged?.Invoke();
+            }
+            return result;
         }
         
         return false;
@@ -705,7 +742,13 @@
     {
         if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.ClearSelectionAsync(_viewerId);
+            var result = await _xbimViewer.ClearSelectionAsync(_viewerId);
+            if (result)
+            {
+                _highlightedElements.Clear();
+                SelectionChanged?.Invoke();
+            }
+            return result;
         }
         
         return false;

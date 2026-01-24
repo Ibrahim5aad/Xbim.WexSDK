@@ -1,8 +1,11 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components
+@using Microsoft.Extensions.DependencyInjection
 @using Xbim.WexBlazor.Models
+@using Xbim.WexBlazor.Services
 @namespace Xbim.WexBlazor.Components
 @inject NavigationManager NavigationManager
+@inject IServiceProvider ServiceProvider
 
 <div class="file-loader-panel @CssClass @(IsVisible ? "visible" : "")">
     <div class="file-loader-header">
@@ -204,8 +207,20 @@
 </div>
 
 @code {
+    private IfcModelService? _ifcModelService;
+    private PropertyService? _propertyService;
+    
+    private IfcModelService? IfcModelService => _ifcModelService ??= ServiceProvider.GetService<IfcModelService>();
+    private PropertyService? PropertyService => _propertyService ??= ServiceProvider.GetService<PropertyService>();
+    
+    [CascadingParameter]
+    public XbimViewerComponent? Viewer { get; set; }
+    
     [Parameter]
     public bool IsVisible { get; set; } = true;
+    
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
 
     [Parameter]
     public bool AllowClose { get; set; } = true;
@@ -213,11 +228,11 @@
     [Parameter]
     public bool AllowCustomHeaders { get; set; } = true;
     
-    /// <summary>
-    /// Whether to allow loading IFC files directly (requires server-side processing)
-    /// </summary>
     [Parameter]
     public bool AllowIfcFiles { get; set; } = true;
+    
+    [Parameter]
+    public bool AutoCloseOnLoad { get; set; } = true;
 
     [Parameter]
     public string? CssClass { get; set; }
@@ -233,13 +248,13 @@
 
     [Parameter]
     public EventCallback<string> OnError { get; set; }
+    
+    [Parameter]
+    public EventCallback<LoadedModel> OnModelLoaded { get; set; }
 
     [Parameter]
     public List<DemoModel>? DemoModels { get; set; }
     
-    /// <summary>
-    /// Processing message to show during IFC conversion
-    /// </summary>
     [Parameter]
     public string? ProcessingMessage { get; set; }
 
@@ -351,7 +366,6 @@
         _errorMessage = null;
         ProcessingMessage = null;
 
-        // Validate IFC files are allowed
         if (!AllowIfcFiles && (_selectedFormat == ModelFormat.Ifc || _selectedFormat == ModelFormat.IfcZip))
         {
             _errorMessage = "IFC files are not supported in this context. Please use a wexBIM file.";
@@ -359,13 +373,15 @@
             return;
         }
 
+        var isIfcFile = _selectedFormat == ModelFormat.Ifc || _selectedFormat == ModelFormat.IfcZip;
+
         try
         {
             IsLoading = true;
             _loadingProgress = 0;
+            ProcessingMessage = isIfcFile ? "Reading file..." : null;
             StateHasChanged();
 
-            // Read file into byte array (allow large files up to 500MB for IFC)
             var maxSize = _selectedFormat == ModelFormat.Wexbim ? file.Size : Math.Max(file.Size, 500 * 1024 * 1024);
             await using var stream = file.OpenReadStream(maxSize);
             using var memoryStream = new MemoryStream();
@@ -378,20 +394,28 @@
             {
                 await memoryStream.WriteAsync(buffer, 0, bytesRead);
                 totalRead += bytesRead;
-                _loadingProgress = (int)((totalRead * 100) / file.Size);
+                var readProgress = (int)((totalRead * 100) / file.Size);
+                _loadingProgress = isIfcFile ? Math.Min(readProgress / 5, 20) : readProgress;
                 StateHasChanged();
             }
 
-            // Pass file data and metadata to parent component
-            await OnFileLoaded.InvokeAsync(new FileLoadedEventArgs
-            {
-                FileData = memoryStream.ToArray(),
-                FileName = file.Name,
-                FileSize = file.Size,
-                Format = _selectedFormat
-            });
+            var fileData = memoryStream.ToArray();
             
-            // Clear selected file info after successful processing
+            if (OnFileLoaded.HasDelegate)
+            {
+                await OnFileLoaded.InvokeAsync(new FileLoadedEventArgs
+                {
+                    FileData = fileData,
+                    FileName = file.Name,
+                    FileSize = file.Size,
+                    Format = _selectedFormat
+                });
+            }
+            else if (Viewer != null)
+            {
+                await LoadFileIntoViewerAsync(fileData, file.Name, file.Size, _selectedFormat);
+            }
+            
             _selectedFileName = null;
             _selectedFileSize = null;
         }
@@ -405,6 +429,87 @@
             IsLoading = false;
             _loadingProgress = 0;
             ProcessingMessage = null;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadFileIntoViewerAsync(byte[] fileData, string fileName, long fileSize, ModelFormat format)
+    {
+        if (Viewer == null) return;
+        
+        try
+        {
+            if ((format == ModelFormat.Ifc || format == ModelFormat.IfcZip) && IfcModelService != null)
+            {
+                SetLoading(true, "Processing IFC file...");
+                await Task.Yield();
+                
+                var progress = new Progress<IfcProcessingProgress>(p =>
+                {
+                    SetProgress(p.PercentComplete, p.Message);
+                });
+
+                var result = await Task.Run(async () => 
+                    await IfcModelService.ProcessIfcBytesAsync(fileData, fileName, progress));
+
+                if (!result.Success || result.WexbimData == null)
+                {
+                    _errorMessage = result.ErrorMessage ?? "Failed to process IFC file";
+                    await OnError.InvokeAsync(_errorMessage);
+                    return;
+                }
+
+                SetProgress(98, "Loading model into viewer...");
+
+                var loadedModel = await Viewer.LoadModelFromBytesAsync(
+                    result.WexbimData,
+                    Path.ChangeExtension(fileName, ".wexbim"));
+
+                if (loadedModel != null)
+                {
+                    loadedModel.SizeBytes = result.WexbimData.Length;
+                    loadedModel.OriginalFormat = format;
+                    
+                    if (result.Model != null)
+                    {
+                        loadedModel.IfcModel = result.Model;
+                        
+                        if (PropertyService != null)
+                        {
+                            var propertySource = new IfcPropertySource(result.Model, loadedModel.Id);
+                            PropertyService.RegisterSource(propertySource);
+                        }
+                    }
+                    
+                    await OnModelLoaded.InvokeAsync(loadedModel);
+                    await CloseIfAutoClose();
+                }
+            }
+            else
+            {
+                var loadedModel = await Viewer.LoadModelFromBytesAsync(fileData, fileName);
+                if (loadedModel != null)
+                {
+                    loadedModel.SizeBytes = fileSize;
+                    loadedModel.OriginalFormat = format;
+                    await OnModelLoaded.InvokeAsync(loadedModel);
+                    await CloseIfAutoClose();
+                }
+            }
+        }
+        finally
+        {
+            SetLoading(false);
+        }
+    }
+    
+    private async Task CloseIfAutoClose()
+    {
+        if (AutoCloseOnLoad)
+        {
+            IsVisible = false;
+            await IsVisibleChanged.InvokeAsync(false);
+            await OnClose.InvokeAsync();
             StateHasChanged();
         }
     }
@@ -429,19 +534,23 @@
             }
             else if (modelPath.StartsWith("~/"))
             {
-                // Handle ~/ prefix (Blazor convention for wwwroot)
-                var path = modelPath.Substring(2); // Remove ~/
+                var path = modelPath.Substring(2);
                 fullUrl = NavigationManager.ToAbsoluteUri(path).ToString();
             }
             else
             {
-                // Regular relative path
                 var path = modelPath.TrimStart('/');
                 fullUrl = NavigationManager.ToAbsoluteUri(path).ToString();
             }
 
-            // Pass URL directly to the viewer
-            await OnUrlLoaded.InvokeAsync(fullUrl);
+            if (OnUrlLoaded.HasDelegate)
+            {
+                await OnUrlLoaded.InvokeAsync(fullUrl);
+            }
+            else if (Viewer != null)
+            {
+                await LoadUrlIntoViewerAsync(fullUrl);
+            }
         }
         catch (Exception ex)
         {
@@ -467,14 +576,19 @@
             IsLoading = true;
             StateHasChanged();
 
-            // Validate URL
             if (!Uri.TryCreate(_modelUrl, UriKind.Absolute, out var uri))
             {
                 throw new Exception("Invalid URL format");
             }
 
-            // Pass URL directly to the viewer
-            await OnUrlLoaded.InvokeAsync(_modelUrl);
+            if (OnUrlLoaded.HasDelegate)
+            {
+                await OnUrlLoaded.InvokeAsync(_modelUrl);
+            }
+            else if (Viewer != null)
+            {
+                await LoadUrlIntoViewerAsync(_modelUrl);
+            }
         }
         catch (Exception ex)
         {
@@ -485,6 +599,77 @@
         {
             IsLoading = false;
             StateHasChanged();
+        }
+    }
+    
+    private async Task LoadUrlIntoViewerAsync(string url)
+    {
+        if (Viewer == null) return;
+        
+        try
+        {
+            var lowerUrl = url.ToLowerInvariant();
+            
+            if ((lowerUrl.EndsWith(".ifc") || lowerUrl.EndsWith(".ifczip")) && IfcModelService != null)
+            {
+                var fileName = Path.GetFileName(new Uri(url).LocalPath);
+                
+                SetLoading(true, "Downloading IFC file...");
+                
+                using var httpClient = new System.Net.Http.HttpClient();
+                httpClient.Timeout = TimeSpan.FromMinutes(5);
+                
+                var fileData = await httpClient.GetByteArrayAsync(url);
+                
+                SetProgress(0, "Processing IFC file...");
+                await Task.Yield();
+                
+                var progress = new Progress<IfcProcessingProgress>(p =>
+                {
+                    SetProgress(p.PercentComplete, p.Message);
+                });
+
+                var result = await Task.Run(async () => 
+                    await IfcModelService.ProcessIfcBytesAsync(fileData, fileName, progress));
+                
+                if (!result.Success || result.WexbimData == null)
+                {
+                    _errorMessage = result.ErrorMessage ?? "Failed to process IFC file";
+                    await OnError.InvokeAsync(_errorMessage);
+                    return;
+                }
+                
+                SetProgress(98, "Loading model into viewer...");
+                
+                var loadedModel = await Viewer.LoadModelFromBytesAsync(result.WexbimData, fileName);
+                if (loadedModel != null)
+                {
+                    loadedModel.IfcModel = result.Model;
+                    loadedModel.OriginalFormat = ModelFormat.Ifc;
+                    
+                    if (result.Model != null && PropertyService != null)
+                    {
+                        var propertySource = new IfcPropertySource(result.Model, loadedModel.Id, fileName);
+                        PropertyService.RegisterSource(propertySource);
+                    }
+                    
+                    await OnModelLoaded.InvokeAsync(loadedModel);
+                    await CloseIfAutoClose();
+                }
+            }
+            else
+            {
+                var loadedModel = await Viewer.LoadModelAsync(url);
+                if (loadedModel != null)
+                {
+                    await OnModelLoaded.InvokeAsync(loadedModel);
+                    await CloseIfAutoClose();
+                }
+            }
+        }
+        finally
+        {
+            SetLoading(false);
         }
     }
 
