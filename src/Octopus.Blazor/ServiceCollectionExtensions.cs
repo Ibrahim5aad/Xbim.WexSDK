@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Octopus.Blazor.Models;
 using Octopus.Blazor.Services;
 using Octopus.Blazor.Services.Abstractions;
+using Octopus.Blazor.Services.WexBimSources;
 
 namespace Octopus.Blazor;
 
@@ -26,6 +27,7 @@ public static class ServiceCollectionExtensions
     /// <list type="bullet">
     ///   <item><see cref="ThemeService"/> - Theme management (singleton)</item>
     ///   <item><see cref="IPropertyService"/> / <see cref="PropertyService"/> - Property aggregation (singleton)</item>
+    ///   <item><see cref="IWexBimSourceProvider"/> / <see cref="WexBimSourceProvider"/> - WexBIM source management (singleton)</item>
     ///   <item><see cref="IfcHierarchyService"/> - Hierarchy generation (singleton)</item>
     /// </list>
     /// </para>
@@ -58,6 +60,9 @@ public static class ServiceCollectionExtensions
         var options = new OctopusBlazorOptions();
         configure(options);
 
+        // Store options for later use during source registration
+        services.TryAddSingleton(options);
+
         // Register ThemeService with configured options
         var themeService = new ThemeService();
         themeService.SetTheme(options.InitialTheme);
@@ -69,8 +74,46 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<PropertyService>();
         services.TryAddSingleton<IPropertyService>(sp => sp.GetRequiredService<PropertyService>());
 
+        // Register WexBimSourceProvider as both interface and concrete type
+        services.TryAddSingleton<WexBimSourceProvider>();
+        services.TryAddSingleton<IWexBimSourceProvider>(sp => sp.GetRequiredService<WexBimSourceProvider>());
+
         // Register IfcHierarchyService
         services.TryAddSingleton<IfcHierarchyService>();
+
+        // Register configured sources if provided (URL and local file sources only - static assets need HttpClient)
+        if (options.StandaloneSources != null)
+        {
+            services.AddSingleton<IWexBimSourceInitializer>(sp =>
+                new StandaloneSourceInitializer(options.StandaloneSources));
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures pre-registered standalone WexBIM sources using an HttpClient.
+    /// <para>
+    /// Call this after <see cref="AddOctopusBlazorStandalone(IServiceCollection, Action{OctopusBlazorOptions})"/>
+    /// to enable static asset sources that require HttpClient for loading.
+    /// </para>
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="httpClientFactory">Factory function to create HttpClient instances.</param>
+    /// <returns>The service collection for chaining.</returns>
+    public static IServiceCollection ConfigureStandaloneHttpClient(
+        this IServiceCollection services,
+        Func<IServiceProvider, HttpClient> httpClientFactory)
+    {
+        services.AddSingleton<IWexBimSourceInitializer>(sp =>
+        {
+            var options = sp.GetService<OctopusBlazorOptions>();
+            if (options?.StandaloneSources == null)
+            {
+                return new NoOpSourceInitializer();
+            }
+            return new HttpClientSourceInitializer(options.StandaloneSources, httpClientFactory(sp));
+        });
 
         return services;
     }

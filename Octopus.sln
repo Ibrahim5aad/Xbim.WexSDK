@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Client", "src\Octop
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Client.Tests", "tests\Octopus.Client.Tests\Octopus.Client.Tests.csproj", "{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Blazor.Tests", "tests\Octopus.Blazor.Tests\Octopus.Blazor.Tests.csproj", "{20D1CB71-D7A0-4522-9948-64A717B1E212}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -271,6 +273,18 @@ Global
 		{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}.Release|x64.Build.0 = Release|Any CPU
 		{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}.Release|x86.Build.0 = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|x64.Build.0 = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Debug|x86.Build.0 = Debug|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|x64.ActiveCfg = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|x64.Build.0 = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|x86.ActiveCfg = Release|Any CPU
+		{20D1CB71-D7A0-4522-9948-64A717B1E212}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -294,5 +308,6 @@ Global
 		{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E} = {5D13C73B-7C64-4902-B548-AF5F955B0680}
 		{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{20D1CB71-D7A0-4522-9948-64A717B1E212} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

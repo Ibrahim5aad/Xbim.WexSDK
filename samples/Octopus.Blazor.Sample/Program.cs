@@ -1,31 +1,62 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Octopus.Blazor;
 using Octopus.Blazor.Sample;
 using Octopus.Blazor.Services;
+using Octopus.Blazor.Services.Abstractions;
+using Octopus.Blazor.Services.WexBimSources;
 using Octopus.Blazor.Models;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+// Register HttpClient for static asset loading
+var httpClient = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+builder.Services.AddScoped(_ => httpClient);
 
-var themeService = new ThemeService();
-themeService.SetTheme(ViewerTheme.Dark);
-themeService.SetAccentColors(lightColor: "#0969da", darkColor: "#1e7e34");
-themeService.SetBackgroundColors(lightColor: "#ffffff", darkColor: "#404040");
-builder.Services.AddSingleton(themeService);
+// Add Octopus.Blazor standalone services with configuration
+builder.Services.AddOctopusBlazorStandalone(options =>
+{
+    options.InitialTheme = ViewerTheme.Dark;
+    options.LightAccentColor = "#0969da";
+    options.DarkAccentColor = "#1e7e34";
+    options.LightBackgroundColor = "#ffffff";
+    options.DarkBackgroundColor = "#404040";
 
-// Register PropertyService with a custom API-simulated property source
-var propertyService = new PropertyService();
+    // Configure standalone WexBIM sources from wwwroot
+    options.StandaloneSources = new StandaloneSourceOptions()
+        .AddStaticAsset("models/SampleHouse.wexbim", "Sample House")
+        .AddStaticAsset("models/FourWalls.wexbim", "Four Walls");
+});
+
+// Build the host first to access services
+var host = builder.Build();
+
+// Initialize WexBIM sources with HttpClient
+var sourceProvider = host.Services.GetRequiredService<IWexBimSourceProvider>();
+var options = host.Services.GetService<OctopusBlazorOptions>();
+if (options?.StandaloneSources != null)
+{
+    // Register static asset sources with HttpClient
+    foreach (var assetConfig in options.StandaloneSources.StaticAssets)
+    {
+        var source = new StaticAssetWexBimSource(
+            assetConfig.RelativePath,
+            httpClient,
+            assetConfig.Name);
+        sourceProvider.RegisterSource(source);
+    }
+}
 
 // Add a custom property source that simulates fetching from an API
+var propertyService = host.Services.GetRequiredService<IPropertyService>();
 var apiPropertySource = new CustomPropertySource(
     async (query, ct) =>
     {
         // Simulate API latency
         await Task.Delay(100, ct);
-        
+
         // Generate mock properties based on element ID
         var props = new ElementProperties
         {
@@ -34,7 +65,7 @@ var apiPropertySource = new CustomPropertySource(
             Name = $"Element #{query.ElementId}",
             TypeName = GetMockTypeName(query.ElementId)
         };
-        
+
         // Add simulated API data group
         props.Groups.Add(new PropertyGroup
         {
@@ -49,7 +80,7 @@ var apiPropertySource = new CustomPropertySource(
                 new() { Name = "Priority", Value = GetMockPriority(query.ElementId), ValueType = "string" }
             }
         });
-        
+
         // Add simulated maintenance data
         props.Groups.Add(new PropertyGroup
         {
@@ -63,18 +94,15 @@ var apiPropertySource = new CustomPropertySource(
                 new() { Name = "Warranty Expires", Value = DateTime.UtcNow.AddYears(Random.Shared.Next(1, 5)).ToString("yyyy-MM-dd"), ValueType = "date" }
             }
         });
-        
+
         return props;
     },
     sourceType: "REST API",
     name: "Simulated API Properties"
 );
 propertyService.RegisterSource(apiPropertySource);
-builder.Services.AddSingleton(propertyService);
 
-builder.Services.AddSingleton<IfcHierarchyService>();
-
-await builder.Build().RunAsync();
+await host.RunAsync();
 
 // Helper functions for mock data
 static string GetMockTypeName(int id) => (id % 5) switch
