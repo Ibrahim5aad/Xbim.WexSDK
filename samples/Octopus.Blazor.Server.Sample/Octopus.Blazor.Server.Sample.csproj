@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Octopus.Blazor\Octopus.Blazor.csproj" />
   </ItemGroup>
 
