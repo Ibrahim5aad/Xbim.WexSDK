@@ -5,6 +5,7 @@ using Octopus.Blazor.Services;
 using Octopus.Blazor.Services.Abstractions;
 using Octopus.Blazor.Services.Abstractions.Server;
 using Octopus.Blazor.Services.Server;
+using Octopus.Blazor.Services.Server.Guards;
 using Octopus.Blazor.Services.WexBimSources;
 using Octopus.Client;
 
@@ -90,6 +91,16 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IWexBimSourceInitializer>(sp =>
                 new StandaloneSourceInitializer(options.StandaloneSources));
         }
+
+        // Register guard implementations for server-only services.
+        // These throw ServerServiceNotConfiguredException with actionable messages when used,
+        // preventing ambiguous null reference errors and guiding users to proper configuration.
+        services.TryAddSingleton<IWorkspacesService, NotConfiguredWorkspacesService>();
+        services.TryAddSingleton<IProjectsService, NotConfiguredProjectsService>();
+        services.TryAddSingleton<IFilesService, NotConfiguredFilesService>();
+        services.TryAddSingleton<IModelsService, NotConfiguredModelsService>();
+        services.TryAddSingleton<IUsageService, NotConfiguredUsageService>();
+        services.TryAddSingleton<IProcessingService, NotConfiguredProcessingService>();
 
         return services;
     }
@@ -345,13 +356,15 @@ public static class ServiceCollectionExtensions
             configureClient(options);
         });
 
-        // Register server-backed services
-        services.TryAddSingleton<IWorkspacesService, WorkspacesService>();
-        services.TryAddSingleton<IProjectsService, ProjectsService>();
-        services.TryAddSingleton<IFilesService, FilesService>();
-        services.TryAddSingleton<IModelsService, ModelsService>();
-        services.TryAddSingleton<IUsageService, UsageService>();
-        services.TryAddSingleton<IProcessingService, ProcessingService>();
+        // Register server-backed services, replacing any guard implementations from standalone mode.
+        // Using Replace ensures that the real implementations override the guards that throw
+        // ServerServiceNotConfiguredException.
+        services.Replace(ServiceDescriptor.Singleton<IWorkspacesService, WorkspacesService>());
+        services.Replace(ServiceDescriptor.Singleton<IProjectsService, ProjectsService>());
+        services.Replace(ServiceDescriptor.Singleton<IFilesService, FilesService>());
+        services.Replace(ServiceDescriptor.Singleton<IModelsService, ModelsService>());
+        services.Replace(ServiceDescriptor.Singleton<IUsageService, UsageService>());
+        services.Replace(ServiceDescriptor.Singleton<IProcessingService, ProcessingService>());
 
         return services;
     }

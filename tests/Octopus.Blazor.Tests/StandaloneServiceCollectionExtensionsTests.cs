@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Octopus.Blazor.Models;
 using Octopus.Blazor.Services;
 using Octopus.Blazor.Services.Abstractions;
+using Octopus.Blazor.Services.Server.Guards;
 using Octopus.Blazor.Services.WexBimSources;
 
 namespace Octopus.Blazor.Tests;
@@ -145,19 +146,27 @@ public class StandaloneServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddOctopusBlazorStandalone_DoesNotRegisterServerServices()
+    public void AddOctopusBlazorStandalone_RegistersGuardServicesInsteadOfRealServerServices()
     {
         // Arrange
         var services = new ServiceCollection();
 
         // Act
         services.AddOctopusBlazorStandalone();
+        var provider = services.BuildServiceProvider();
 
-        // Assert - Server services should NOT be registered
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IWorkspacesService));
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IProjectsService));
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IFilesService));
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IModelsService));
+        // Assert - Server service interfaces ARE registered, but with guard implementations
+        // that throw ServerServiceNotConfiguredException when used
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IWorkspacesService));
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IProjectsService));
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IFilesService));
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IModelsService));
+
+        // Verify they are guard implementations (not real services)
+        Assert.IsType<Services.Server.Guards.NotConfiguredWorkspacesService>(
+            provider.GetRequiredService<Services.Abstractions.Server.IWorkspacesService>());
+        Assert.IsType<Services.Server.Guards.NotConfiguredProjectsService>(
+            provider.GetRequiredService<Services.Abstractions.Server.IProjectsService>());
     }
 
     #endregion
@@ -271,17 +280,25 @@ public class StandaloneServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddOctopusBlazorServer_DoesNotRegisterServerConnectedServices()
+    public void AddOctopusBlazorServer_RegistersGuardServicesNotRealServerConnectedServices()
     {
         // Arrange
         var services = new ServiceCollection();
 
         // Act
         services.AddOctopusBlazorServer();
+        var provider = services.BuildServiceProvider();
 
-        // Assert - Server-connected services should NOT be registered (requires AddOctopusBlazorServerConnected)
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IWorkspacesService));
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IProjectsService));
+        // Assert - Server service interfaces ARE registered with guard implementations
+        // (AddOctopusBlazorServer is for IFC processing only, not API connectivity)
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IWorkspacesService));
+        Assert.Contains(services, d => d.ServiceType == typeof(Services.Abstractions.Server.IProjectsService));
+
+        // Verify they are guard implementations (not real services)
+        Assert.IsType<Services.Server.Guards.NotConfiguredWorkspacesService>(
+            provider.GetRequiredService<Services.Abstractions.Server.IWorkspacesService>());
+        Assert.IsType<Services.Server.Guards.NotConfiguredProjectsService>(
+            provider.GetRequiredService<Services.Abstractions.Server.IProjectsService>());
     }
 
     #endregion
