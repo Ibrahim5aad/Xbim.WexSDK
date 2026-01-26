@@ -1,5 +1,8 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// Add service defaults (OpenTelemetry, health checks, resilience)
+builder.AddServiceDefaults();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -19,6 +22,9 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Octopus Server API v1");
     options.RoutePrefix = "swagger";
 });
+
+// Map Aspire default endpoints (/health, /alive)
+app.MapDefaultEndpoints();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
    .WithName("HealthCheck")
