@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Octopus.Server.Abstractions.Auth;
+using Octopus.Server.Abstractions.Storage;
 using Octopus.Server.Contracts;
 using Octopus.Server.Persistence.EfCore;
 
@@ -35,6 +36,10 @@ public static class FileEndpoints
 
         filesGroup.MapGet("/{fileId:guid}", GetFile)
             .WithName("GetFile")
+            .WithOpenApi();
+
+        filesGroup.MapGet("/{fileId:guid}/content", GetFileContent)
+            .WithName("GetFileContent")
             .WithOpenApi();
 
         return app;
@@ -91,6 +96,73 @@ public static class FileEndpoints
         };
 
         return Results.Ok(fileDto);
+    }
+
+    /// <summary>
+    /// Downloads the content of a file by its ID.
+    /// Requires at least Viewer role in the project that contains the file.
+    /// Streams the file content directly from storage.
+    /// </summary>
+    private static async Task<IResult> GetFileContent(
+        Guid fileId,
+        IUserContext userContext,
+        IAuthorizationService authZ,
+        OctopusDbContext dbContext,
+        IStorageProvider storageProvider,
+        CancellationToken cancellationToken = default)
+    {
+        if (!userContext.IsAuthenticated)
+        {
+            return Results.Unauthorized();
+        }
+
+        // Find the file
+        var file = await dbContext.Files
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == fileId, cancellationToken);
+
+        if (file == null)
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File not found." });
+        }
+
+        // Check project access - returns 404 if no access to avoid exposing file existence
+        if (!await authZ.CanAccessProjectAsync(file.ProjectId, ProjectRole.Viewer, cancellationToken))
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File not found." });
+        }
+
+        // Check if file is deleted
+        if (file.IsDeleted)
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File has been deleted." });
+        }
+
+        // Check if storage key exists
+        if (string.IsNullOrEmpty(file.StorageKey))
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File content not available." });
+        }
+
+        // Open the file stream from storage
+        var stream = await storageProvider.OpenReadAsync(file.StorageKey, cancellationToken);
+
+        if (stream == null)
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File content not found in storage." });
+        }
+
+        // Determine content type (default to application/octet-stream if not specified)
+        var contentType = !string.IsNullOrEmpty(file.ContentType)
+            ? file.ContentType
+            : "application/octet-stream";
+
+        // Return the file stream with appropriate headers
+        return Results.File(
+            stream,
+            contentType: contentType,
+            fileDownloadName: file.Name,
+            enableRangeProcessing: true);
     }
 
     /// <summary>

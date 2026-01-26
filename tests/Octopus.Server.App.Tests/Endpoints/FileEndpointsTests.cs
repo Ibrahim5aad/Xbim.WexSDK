@@ -859,4 +859,345 @@ public class FileEndpointsTests : IDisposable
     }
 
     #endregion
+
+    #region Get File Content Tests
+
+    [Fact]
+    public async Task GetFileContent_ReturnsOk_WithFileBytes()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+        var uploadedFile = await UploadFileAsync(project.Id, "test-model.ifc", fileContent);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{uploadedFile.Id}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var downloadedContent = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(fileContent, downloadedContent);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsCorrectContentType()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0xDE, 0xAD, 0xBE, 0xEF };
+
+        // Reserve upload with specific content type
+        var reserveRequest = new ReserveUploadRequest
+        {
+            FileName = "document.pdf",
+            ContentType = "application/pdf",
+            ExpectedSizeBytes = fileContent.Length
+        };
+        var reserveResponse = await _client.PostAsJsonAsync($"/api/v1/projects/{project.Id}/files/uploads", reserveRequest);
+        reserveResponse.EnsureSuccessStatusCode();
+        var reserved = await reserveResponse.Content.ReadFromJsonAsync<ReserveUploadResponse>();
+
+        // Upload content
+        var multipartContent = new MultipartFormDataContent();
+        var content = new ByteArrayContent(fileContent);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+        multipartContent.Add(content, "file", "document.pdf");
+
+        var uploadResponse = await _client.PostAsync(
+            $"/api/v1/projects/{project.Id}/files/uploads/{reserved!.Session.Id}/content",
+            multipartContent);
+        uploadResponse.EnsureSuccessStatusCode();
+
+        // Commit
+        var commitResponse = await _client.PostAsJsonAsync(
+            $"/api/v1/projects/{project.Id}/files/uploads/{reserved.Session.Id}/commit",
+            new CommitUploadRequest());
+        commitResponse.EnsureSuccessStatusCode();
+        var result = await commitResponse.Content.ReadFromJsonAsync<CommitUploadResponse>();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{result!.File.Id}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsCorrectFilename()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03 };
+        var uploadedFile = await UploadFileAsync(project.Id, "my-building-model.ifc", fileContent);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{uploadedFile.Id}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("my-building-model.ifc", response.Content.Headers.ContentDisposition?.FileName);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsNotFound_WhenFileDoesNotExist()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var nonExistentFileId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{nonExistentFileId}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsNotFound_WhenUserHasNoAccess()
+    {
+        // Arrange
+        Guid fileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            // Create workspace/project/file without any user membership
+            var workspace = new Workspace
+            {
+                Id = Guid.NewGuid(),
+                Name = "No Access Workspace",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Workspaces.Add(workspace);
+
+            var project = new Project
+            {
+                Id = Guid.NewGuid(),
+                WorkspaceId = workspace.Id,
+                Name = "No Access Project",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Projects.Add(project);
+
+            var file = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "protected-file.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 500,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = $"protected/{Guid.NewGuid():N}",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(file);
+            fileId = file.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{fileId}/content");
+
+        // Assert - Returns 404 to avoid exposing file existence
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsNotFound_WhenFileIsDeleted()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        Guid deletedFileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            var deletedFile = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "deleted-file.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 100,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = $"deleted/{Guid.NewGuid():N}",
+                IsDeleted = true,
+                DeletedAt = DateTimeOffset.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(deletedFile);
+            deletedFileId = deletedFile.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act - Try to download deleted file content
+        var response = await _client.GetAsync($"/api/v1/files/{deletedFileId}/content");
+
+        // Assert - Deleted files should not be downloadable
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsNotFound_WhenStorageKeyMissing()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        Guid fileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            var fileWithoutStorage = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "file-without-storage.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 100,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = "", // Empty storage key
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(fileWithoutStorage);
+            fileId = fileWithoutStorage.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{fileId}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsNotFound_WhenContentNotInStorage()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        Guid fileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            var fileWithMissingContent = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "missing-content.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 100,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = $"missing/{Guid.NewGuid():N}", // Key that doesn't exist in storage
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(fileWithMissingContent);
+            fileId = fileWithMissingContent.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{fileId}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFileContent_StreamsLargeFile()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        // Create a larger file content (1KB)
+        var fileContent = new byte[1024];
+        new Random(42).NextBytes(fileContent);
+        var uploadedFile = await UploadFileAsync(project.Id, "large-model.ifc", fileContent);
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{uploadedFile.Id}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var downloadedContent = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(fileContent.Length, downloadedContent.Length);
+        Assert.Equal(fileContent, downloadedContent);
+    }
+
+    [Fact]
+    public async Task GetFileContent_ReturnsDefaultContentType_WhenNotSpecified()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        Guid fileId;
+        var fileContent = new byte[] { 0x01, 0x02, 0x03 };
+        var storageKey = $"test/{Guid.NewGuid():N}";
+
+        // Store content directly in storage provider
+        await _storageProvider.PutAsync(storageKey, new MemoryStream(fileContent), null, CancellationToken.None);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            var fileWithNoContentType = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "unknown-type.bin",
+                ContentType = null!, // No content type
+                SizeBytes = fileContent.Length,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Other,
+                StorageProvider = "InMemory",
+                StorageKey = storageKey,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(fileWithNoContentType);
+            fileId = fileWithNoContentType.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.GetAsync($"/api/v1/files/{fileId}/content");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/octet-stream", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    #endregion
 }
