@@ -1,7 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using Octopus.Server.Persistence.EfCore;
+using Octopus.Server.Persistence.EfCore.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults (OpenTelemetry, health checks, resilience)
 builder.AddServiceDefaults();
+
+// Add persistence (SQLite for development by default)
+var connectionString = builder.Configuration.GetConnectionString("OctopusDb") ?? "Data Source=octopus.db";
+builder.Services.AddOctopusSqlite(connectionString);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -15,6 +23,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// Apply pending migrations on startup (development convenience)
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
