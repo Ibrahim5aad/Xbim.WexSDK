@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Octopus.Server.Abstractions.Auth;
+using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
 using Octopus.Server.App.Auth;
 using Octopus.Server.App.Endpoints;
+using Octopus.Server.App.Processing;
 using Octopus.Server.Persistence.EfCore;
 using Octopus.Server.Persistence.EfCore.Extensions;
 using Octopus.Server.Processing;
@@ -37,11 +39,18 @@ else
     builder.Services.AddLocalDiskStorage(basePath);
 }
 
+// Register progress notifier (default no-op implementation)
+// Can be replaced with SignalR, webhooks, etc.
+builder.Services.AddSingleton<IProgressNotifier>(NullProgressNotifier.Instance);
+
 // Add processing queue and worker (in-memory Channel backend)
 // Skip in Testing environment - tests configure their own mocks
 if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
 {
-    builder.Services.AddInMemoryProcessing();
+    builder.Services.AddInMemoryProcessing(processing =>
+    {
+        processing.AddHandler<IfcToWexBimJobPayload, IfcToWexBimJobHandler>(IfcToWexBimJobHandler.JobTypeName);
+    });
 }
 
 // Configure authentication mode based on configuration
