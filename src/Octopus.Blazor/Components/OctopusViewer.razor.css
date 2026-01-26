@@ -1,4 +1,4 @@
-.xbim-viewer-container {
+.octopus-viewer-container {
     display: block;
     box-sizing: border-box;
     margin: 0;
@@ -7,7 +7,7 @@
     position: relative;
 }
 
-.xbim-canvas-wrapper {
+.octopus-canvas-wrapper {
     position: absolute;
     top: 0;
     left: 0;

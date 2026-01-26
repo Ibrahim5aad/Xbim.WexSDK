@@ -1,4 +1,4 @@
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Constants for xBIM Viewer enumerations

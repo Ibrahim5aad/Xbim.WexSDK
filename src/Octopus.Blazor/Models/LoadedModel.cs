@@ -1,6 +1,6 @@
 using Xbim.Common;
 
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Represents a model loaded in the viewer

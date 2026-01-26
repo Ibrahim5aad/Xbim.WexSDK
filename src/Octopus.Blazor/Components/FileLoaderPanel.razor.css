@@ -5,10 +5,10 @@
     transform: translate(-50%, -50%) scale(0.9);
     width: 90%;
     max-width: 500px;
-    background: var(--xbim-bg-primary);
+    background: var(--octopus-bg-primary);
     border-radius: 6px;
-    box-shadow: var(--xbim-shadow-xl);
-    border: 1px solid var(--xbim-border-primary);
+    box-shadow: var(--octopus-shadow-xl);
+    border: 1px solid var(--octopus-border-primary);
     z-index: 2000;
     opacity: 0;
     visibility: hidden;
@@ -26,14 +26,14 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid var(--xbim-border-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
 }
 
 .file-loader-header h5 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -67,17 +67,17 @@
 .file-loader-progress {
     margin-top: 16px;
     padding: 8px;
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
     border-radius: 8px;
 }
 
 .file-loader-panel .nav-tabs {
-    border-bottom: 2px solid var(--xbim-border-primary);
+    border-bottom: 2px solid var(--octopus-border-primary);
 }
 
 .file-loader-panel .nav-link {
     border: none;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     padding: 12px 20px;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -87,41 +87,41 @@
 }
 
 .file-loader-panel .nav-link:hover {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     background: transparent;
-    border-bottom-color: var(--xbim-accent-primary-bg);
+    border-bottom-color: var(--octopus-accent-primary-bg);
 }
 
 .file-loader-panel .nav-link.active {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     background: transparent;
-    border-bottom-color: var(--xbim-accent-primary);
+    border-bottom-color: var(--octopus-accent-primary);
 }
 
 .file-loader-panel .form-label {
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     margin-bottom: 8px;
     font-size: 0.9rem;
 }
 
 .file-loader-panel .form-control {
     border-radius: 8px;
-    border: 2px solid var(--xbim-border-primary);
+    border: 2px solid var(--octopus-border-primary);
     padding: 10px 14px;
     transition: border-color 0.2s ease;
-    background: var(--xbim-bg-primary);
-    color: var(--xbim-text-primary);
+    background: var(--octopus-bg-primary);
+    color: var(--octopus-text-primary);
 }
 
 .file-loader-panel .form-control:focus {
-    border-color: var(--xbim-accent-primary);
-    box-shadow: 0 0 0 3px var(--xbim-accent-primary-bg);
+    border-color: var(--octopus-accent-primary);
+    box-shadow: 0 0 0 3px var(--octopus-accent-primary-bg);
 }
 
 .file-loader-panel .form-text {
     font-size: 0.85rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     margin-top: 6px;
 }
 
@@ -183,7 +183,7 @@
     align-items: flex-start;
     gap: 8px;
     padding-top: 8px;
-    border-top: 1px solid var(--xbim-border-primary);
+    border-top: 1px solid var(--octopus-border-primary);
     font-size: 0.85rem;
     line-height: 1.4;
     opacity: 0.9;
@@ -195,13 +195,13 @@
 }
 
 .file-loader-panel .alert-info {
-    background: var(--xbim-info-bg);
-    color: var(--xbim-info);
+    background: var(--octopus-info-bg);
+    color: var(--octopus-info);
 }
 
 .file-loader-panel .alert-danger {
-    background: var(--xbim-danger-bg);
-    color: var(--xbim-danger);
+    background: var(--octopus-danger-bg);
+    color: var(--octopus-danger);
 }
 
 .file-loader-panel .btn {
@@ -212,15 +212,15 @@
 }
 
 .file-loader-panel .btn-primary {
-    background: var(--xbim-accent-primary);
+    background: var(--octopus-accent-primary);
     border: none;
     color: white;
 }
 
 .file-loader-panel .btn-primary:hover:not(:disabled) {
-    background: var(--xbim-accent-primary-hover);
+    background: var(--octopus-accent-primary-hover);
     transform: translateY(-1px);
-    box-shadow: var(--xbim-shadow-md);
+    box-shadow: var(--octopus-shadow-md);
 }
 
 .file-loader-panel .btn-primary:disabled {
@@ -231,12 +231,12 @@
 .file-loader-panel .progress {
     height: 8px;
     border-radius: 4px;
-    background: var(--xbim-border-primary);
+    background: var(--octopus-border-primary);
 }
 
 .file-loader-panel .progress-bar {
     border-radius: 4px;
-    background: linear-gradient(90deg, var(--xbim-accent-primary) 0%, var(--xbim-accent-primary-hover) 100%);
+    background: linear-gradient(90deg, var(--octopus-accent-primary) 0%, var(--octopus-accent-primary-hover) 100%);
 }
 
 .file-loader-panel .spinner-border-sm {
@@ -256,17 +256,17 @@
 }
 
 .file-loader-body::-webkit-scrollbar-track {
-    background: var(--xbim-scrollbar-track);
+    background: var(--octopus-scrollbar-track);
     border-radius: 10px;
 }
 
 .file-loader-body::-webkit-scrollbar-thumb {
-    background: var(--xbim-scrollbar-thumb);
+    background: var(--octopus-scrollbar-thumb);
     border-radius: 10px;
 }
 
 .file-loader-body::-webkit-scrollbar-thumb:hover {
-    background: var(--xbim-scrollbar-thumb-hover);
+    background: var(--octopus-scrollbar-thumb-hover);
 }
 
 /* Demo models list */
@@ -281,8 +281,8 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: var(--xbim-bg-primary);
-    border: 2px solid var(--xbim-border-primary);
+    background: var(--octopus-bg-primary);
+    border: 2px solid var(--octopus-border-primary);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -291,8 +291,8 @@
 }
 
 .demo-model-item:hover:not(:disabled) {
-    border-color: var(--xbim-accent-primary);
-    background: var(--xbim-bg-hover);
+    border-color: var(--octopus-accent-primary);
+    background: var(--octopus-bg-hover);
     transform: translateX(4px);
 }
 
@@ -302,8 +302,8 @@
 }
 
 .demo-model-item.loading {
-    border-color: var(--xbim-accent-primary);
-    background: var(--xbim-accent-primary-bg);
+    border-color: var(--octopus-accent-primary);
+    background: var(--octopus-accent-primary-bg);
 }
 
 .demo-model-icon {
@@ -312,9 +312,9 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: var(--xbim-accent-primary-bg);
+    background: var(--octopus-accent-primary-bg);
     border-radius: 8px;
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     font-size: 1.25rem;
     flex-shrink: 0;
 }
@@ -326,14 +326,14 @@
 
 .demo-model-name {
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     font-size: 0.95rem;
     margin-bottom: 2px;
 }
 
 .demo-model-description {
     font-size: 0.85rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -343,14 +343,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 1.25rem;
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
 
 .demo-model-item:hover:not(:disabled) .demo-model-action {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     transform: translateX(4px);
 }
 

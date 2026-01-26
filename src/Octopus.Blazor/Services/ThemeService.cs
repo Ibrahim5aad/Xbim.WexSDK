@@ -1,7 +1,7 @@
 using Microsoft.JSInterop;
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Models;
 
-namespace Xbim.WexBlazor.Services;
+namespace Octopus.Blazor.Services;
 
 /// <summary>
 /// Service for managing viewer themes, accent colors, and applying styles to the DOM.
@@ -238,19 +238,19 @@ public class ThemeService
         
         var script = $@"
             document.body.className = '{themeClass}';
-            document.body.style.setProperty('--xbim-accent-primary', '{accentColor}', 'important');
-            document.body.style.setProperty('--xbim-accent-primary-hover', '{hoverColor}', 'important');
-            document.body.style.setProperty('--xbim-accent-primary-bg', '{bgColor}', 'important');
-            document.body.style.setProperty('--xbim-border-hover', '{accentColor}', 'important');
+            document.body.style.setProperty('--octopus-accent-primary', '{accentColor}', 'important');
+            document.body.style.setProperty('--octopus-accent-primary-hover', '{hoverColor}', 'important');
+            document.body.style.setProperty('--octopus-accent-primary-bg', '{bgColor}', 'important');
+            document.body.style.setProperty('--octopus-border-hover', '{accentColor}', 'important');
         ";
         
         await jsRuntime.InvokeVoidAsync("eval", script);
     }
     
     /// <summary>
-    /// Applies the current theme to an XbimViewerComponent.
+    /// Applies the current theme to an OctopusViewer.
     /// </summary>
-    public async Task ApplyToViewerAsync(Components.XbimViewerComponent viewer, GridPlugin? gridPlugin = null)
+    public async Task ApplyToViewerAsync(Components.OctopusViewer viewer, GridPlugin? gridPlugin = null)
     {
         await viewer.SetBackgroundColorAsync(CurrentBackgroundColor);
         await viewer.SetHighlightingColorAsync(EffectiveSelectionColor);

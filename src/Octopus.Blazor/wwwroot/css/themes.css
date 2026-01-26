@@ -1,83 +1,83 @@
 /* Light Theme (Default) */
 .theme-light {
-    --xbim-bg-primary: #ffffff;
-    --xbim-bg-secondary: #f6f8fa;
-    --xbim-bg-tertiary: #f6f8fa;
-    --xbim-bg-panel: #f6f8fa;
-    --xbim-bg-hover: #f3f4f6;
-    --xbim-bg-active: #e5e7eb;
+    --octopus-bg-primary: #ffffff;
+    --octopus-bg-secondary: #f6f8fa;
+    --octopus-bg-tertiary: #f6f8fa;
+    --octopus-bg-panel: #f6f8fa;
+    --octopus-bg-hover: #f3f4f6;
+    --octopus-bg-active: #e5e7eb;
     
-    --xbim-text-primary: #24292f;
-    --xbim-text-secondary: #57606a;
-    --xbim-text-tertiary: #6e7781;
-    --xbim-text-muted: #6e7781;
+    --octopus-text-primary: #24292f;
+    --octopus-text-secondary: #57606a;
+    --octopus-text-tertiary: #6e7781;
+    --octopus-text-muted: #6e7781;
     
-    --xbim-border-primary: #d0d7de;
-    --xbim-border-secondary: #d0d7de;
-    --xbim-border-hover: #0066cc;
+    --octopus-border-primary: #d0d7de;
+    --octopus-border-secondary: #d0d7de;
+    --octopus-border-hover: #0066cc;
     
-    --xbim-accent-primary: #0066cc;
-    --xbim-accent-primary-hover: #0052a3;
-    --xbim-accent-primary-bg: rgba(0, 102, 204, 0.1);
+    --octopus-accent-primary: #0066cc;
+    --octopus-accent-primary-hover: #0052a3;
+    --octopus-accent-primary-bg: rgba(0, 102, 204, 0.1);
     
-    --xbim-shadow-sm: none;
-    --xbim-shadow-md: none;
-    --xbim-shadow-lg: none;
-    --xbim-shadow-xl: none;
+    --octopus-shadow-sm: none;
+    --octopus-shadow-md: none;
+    --octopus-shadow-lg: none;
+    --octopus-shadow-xl: none;
     
-    --xbim-success: #28a745;
-    --xbim-success-bg: rgba(40, 167, 69, 0.1);
-    --xbim-warning: #ffc107;
-    --xbim-warning-bg: rgba(255, 193, 7, 0.1);
-    --xbim-danger: #dc3545;
-    --xbim-danger-bg: rgba(220, 53, 69, 0.1);
-    --xbim-info: #0d47a1;
-    --xbim-info-bg: #e3f2fd;
+    --octopus-success: #28a745;
+    --octopus-success-bg: rgba(40, 167, 69, 0.1);
+    --octopus-warning: #ffc107;
+    --octopus-warning-bg: rgba(255, 193, 7, 0.1);
+    --octopus-danger: #dc3545;
+    --octopus-danger-bg: rgba(220, 53, 69, 0.1);
+    --octopus-info: #0d47a1;
+    --octopus-info-bg: #e3f2fd;
     
-    --xbim-scrollbar-track: #f1f1f1;
-    --xbim-scrollbar-thumb: #888888;
-    --xbim-scrollbar-thumb-hover: #555555;
+    --octopus-scrollbar-track: #f1f1f1;
+    --octopus-scrollbar-thumb: #888888;
+    --octopus-scrollbar-thumb-hover: #555555;
 }
 
 /* Dark Theme */
 .theme-dark {
-    --xbim-bg-primary: #0d1117;
-    --xbim-bg-secondary: #161b22;
-    --xbim-bg-tertiary: #21262d;
-    --xbim-bg-panel: #161b22;
-    --xbim-bg-hover: #21262d;
-    --xbim-bg-active: #30363d;
+    --octopus-bg-primary: #0d1117;
+    --octopus-bg-secondary: #161b22;
+    --octopus-bg-tertiary: #21262d;
+    --octopus-bg-panel: #161b22;
+    --octopus-bg-hover: #21262d;
+    --octopus-bg-active: #30363d;
     
-    --xbim-text-primary: #c9d1d9;
-    --xbim-text-secondary: #8b949e;
-    --xbim-text-tertiary: #6e7681;
-    --xbim-text-muted: #6e7681;
+    --octopus-text-primary: #c9d1d9;
+    --octopus-text-secondary: #8b949e;
+    --octopus-text-tertiary: #6e7681;
+    --octopus-text-muted: #6e7681;
     
-    --xbim-border-primary: #444c56;
-    --xbim-border-secondary: #444c56;
-    --xbim-border-hover: #4da3ff;
+    --octopus-border-primary: #444c56;
+    --octopus-border-secondary: #444c56;
+    --octopus-border-hover: #4da3ff;
     
-    --xbim-accent-primary: #4da3ff;
-    --xbim-accent-primary-hover: #66b3ff;
-    --xbim-accent-primary-bg: rgba(77, 163, 255, 0.2);
+    --octopus-accent-primary: #4da3ff;
+    --octopus-accent-primary-hover: #66b3ff;
+    --octopus-accent-primary-bg: rgba(77, 163, 255, 0.2);
     
-    --xbim-shadow-sm: none;
-    --xbim-shadow-md: none;
-    --xbim-shadow-lg: none;
-    --xbim-shadow-xl: none;
+    --octopus-shadow-sm: none;
+    --octopus-shadow-md: none;
+    --octopus-shadow-lg: none;
+    --octopus-shadow-xl: none;
     
-    --xbim-success: #4caf50;
-    --xbim-success-bg: rgba(76, 175, 80, 0.2);
-    --xbim-warning: #ffb300;
-    --xbim-warning-bg: rgba(255, 179, 0, 0.2);
-    --xbim-danger: #f44336;
-    --xbim-danger-bg: rgba(244, 67, 54, 0.2);
-    --xbim-info: #2196f3;
-    --xbim-info-bg: rgba(33, 150, 243, 0.2);
+    --octopus-success: #4caf50;
+    --octopus-success-bg: rgba(76, 175, 80, 0.2);
+    --octopus-warning: #ffb300;
+    --octopus-warning-bg: rgba(255, 179, 0, 0.2);
+    --octopus-danger: #f44336;
+    --octopus-danger-bg: rgba(244, 67, 54, 0.2);
+    --octopus-info: #2196f3;
+    --octopus-info-bg: rgba(33, 150, 243, 0.2);
     
-    --xbim-scrollbar-track: rgba(255, 255, 255, 0.05);
-    --xbim-scrollbar-thumb: rgba(255, 255, 255, 0.2);
-    --xbim-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+    --octopus-scrollbar-track: rgba(255, 255, 255, 0.05);
+    --octopus-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+    --octopus-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
 }
 
 /* Apply theme to body or root element */

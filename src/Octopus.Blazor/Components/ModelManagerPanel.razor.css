@@ -1,9 +1,9 @@
 .model-manager-panel {
     position: absolute;
-    background: var(--xbim-bg-panel);
+    background: var(--octopus-bg-panel);
     border-radius: 6px;
-    box-shadow: var(--xbim-shadow-lg);
-    border: 1px solid var(--xbim-border-primary);
+    box-shadow: var(--octopus-shadow-lg);
+    border: 1px solid var(--octopus-border-primary);
     z-index: 1000;
     min-width: 300px;
     max-width: 400px;
@@ -44,8 +44,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--xbim-border-primary);
-    background: var(--xbim-bg-tertiary);
+    border-bottom: 1px solid var(--octopus-border-primary);
+    background: var(--octopus-bg-tertiary);
 }
 
 .model-manager-panel.minimized .model-manager-header {
@@ -57,7 +57,7 @@
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -74,7 +74,7 @@
     border: none;
     cursor: pointer;
     padding: 6px 8px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 16px;
     line-height: 1;
     transition: all 0.2s;
@@ -85,8 +85,8 @@
 }
 
 .btn-header-action:hover {
-    background: var(--xbim-accent-primary-bg);
-    color: var(--xbim-accent-primary);
+    background: var(--octopus-accent-primary-bg);
+    color: var(--octopus-accent-primary);
 }
 
 .btn-close-panel {
@@ -94,7 +94,7 @@
     border: none;
     cursor: pointer;
     padding: 4px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 20px;
     line-height: 1;
     transition: color 0.2s;
@@ -110,7 +110,7 @@
 }
 
 .btn-close-panel:hover {
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
 }
 
 .model-manager-body {
@@ -125,7 +125,7 @@
     align-items: center;
     justify-content: center;
     padding: 40px 20px;
-    color: var(--xbim-text-muted);
+    color: var(--octopus-text-muted);
     text-align: center;
 }
 
@@ -139,7 +139,7 @@
 }
 
 .btn-empty-action {
-    background: var(--xbim-accent-primary);
+    background: var(--octopus-accent-primary);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -154,9 +154,9 @@
 }
 
 .btn-empty-action:hover {
-    background: var(--xbim-accent-primary-hover);
+    background: var(--octopus-accent-primary-hover);
     transform: translateY(-1px);
-    box-shadow: var(--xbim-shadow-md);
+    box-shadow: var(--octopus-shadow-md);
 }
 
 .model-list {
@@ -170,14 +170,14 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px;
-    background: var(--xbim-bg-primary);
-    border: 1px solid var(--xbim-border-primary);
+    background: var(--octopus-bg-primary);
+    border: 1px solid var(--octopus-border-primary);
     border-radius: 6px;
     transition: all 0.2s;
 }
 
 .model-item:hover {
-    box-shadow: var(--xbim-shadow-md);
+    box-shadow: var(--octopus-shadow-md);
 }
 
 .model-item.model-stopped {
@@ -196,7 +196,7 @@
 .model-name {
     font-weight: 500;
     font-size: 13px;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -215,7 +215,7 @@
     align-items: center;
     gap: 12px;
     font-size: 11px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
 }
 
 .model-source-type {
@@ -225,7 +225,7 @@
 }
 
 .model-size {
-    color: var(--xbim-text-tertiary);
+    color: var(--octopus-text-tertiary);
 }
 
 .model-status {
@@ -237,13 +237,13 @@
 }
 
 .model-status.status-started {
-    background: var(--xbim-success-bg);
-    color: var(--xbim-success);
+    background: var(--octopus-success-bg);
+    color: var(--octopus-success);
 }
 
 .model-status.status-stopped {
-    background: var(--xbim-warning-bg);
-    color: var(--xbim-warning);
+    background: var(--octopus-warning-bg);
+    color: var(--octopus-warning);
 }
 
 .model-actions {
@@ -252,12 +252,12 @@
 }
 
 .btn-model-action {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
     border: none;
     border-radius: 4px;
     padding: 6px 8px;
     cursor: pointer;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 14px;
     transition: all 0.2s;
     display: flex;
@@ -266,29 +266,29 @@
 }
 
 .btn-model-action:hover {
-    background: var(--xbim-bg-active);
-    color: var(--xbim-text-primary);
+    background: var(--octopus-bg-active);
+    color: var(--octopus-text-primary);
 }
 
 .btn-model-remove:hover {
-    background: var(--xbim-danger-bg);
-    color: var(--xbim-danger);
+    background: var(--octopus-danger-bg);
+    color: var(--octopus-danger);
 }
 
 .btn-model-action.btn-stop:hover {
-    background: var(--xbim-warning-bg);
-    color: var(--xbim-warning);
+    background: var(--octopus-warning-bg);
+    color: var(--octopus-warning);
 }
 
 .btn-model-action.btn-start:hover {
-    background: var(--xbim-success-bg);
-    color: var(--xbim-success);
+    background: var(--octopus-success-bg);
+    color: var(--octopus-success);
 }
 
 .model-manager-footer {
     padding: 8px;
-    border-top: 1px solid var(--xbim-border-primary);
-    background: var(--xbim-bg-tertiary);
+    border-top: 1px solid var(--octopus-border-primary);
+    background: var(--octopus-bg-tertiary);
 }
 
 .btn-panel-action {
@@ -307,12 +307,12 @@
 }
 
 .btn-unload-all {
-    background: var(--xbim-danger-bg);
-    color: var(--xbim-danger);
+    background: var(--octopus-danger-bg);
+    color: var(--octopus-danger);
 }
 
 .btn-unload-all:hover {
-    background: var(--xbim-danger);
+    background: var(--octopus-danger);
     color: white;
 }
 
@@ -321,15 +321,15 @@
 }
 
 .model-manager-body::-webkit-scrollbar-track {
-    background: var(--xbim-scrollbar-track);
+    background: var(--octopus-scrollbar-track);
     border-radius: 3px;
 }
 
 .model-manager-body::-webkit-scrollbar-thumb {
-    background: var(--xbim-scrollbar-thumb);
+    background: var(--octopus-scrollbar-thumb);
     border-radius: 3px;
 }
 
 .model-manager-body::-webkit-scrollbar-thumb:hover {
-    background: var(--xbim-scrollbar-thumb-hover);
+    background: var(--octopus-scrollbar-thumb-hover);
 }

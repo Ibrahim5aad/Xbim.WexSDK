@@ -1,4 +1,4 @@
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Base class for xBIM Viewer plugins

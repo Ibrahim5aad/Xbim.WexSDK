@@ -1,4 +1,4 @@
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Event arguments for file loaded events

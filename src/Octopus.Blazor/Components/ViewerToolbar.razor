@@ -1,23 +1,23 @@
-@using Xbim.WexBlazor.Models
-@namespace Xbim.WexBlazor.Components
+@using Octopus.Blazor.Models
+@namespace Octopus.Blazor.Components
 
-<div class="xbim-toolbar xbim-toolbar-@Position.ToString().ToLower() xbim-toolbar-@Alignment.ToString().ToLower() @CssClass">
+<div class="octopus-toolbar octopus-toolbar-@Position.ToString().ToLower() octopus-toolbar-@Alignment.ToString().ToLower() @CssClass">
     @if (Items != null)
     {
         @foreach (var item in Items)
         {
             @if (item is ToolbarRadioButtonGroup radioGroup)
             {
-                <div class="xbim-toolbar-group xbim-toolbar-radio-group @radioGroup.CssClass" title="@radioGroup.Tooltip">
+                <div class="octopus-toolbar-group octopus-toolbar-radio-group @radioGroup.CssClass" title="@radioGroup.Tooltip">
                     @if (!string.IsNullOrEmpty(radioGroup.Label))
                     {
-                        <div class="xbim-toolbar-group-label">@radioGroup.Label</div>
+                        <div class="octopus-toolbar-group-label">@radioGroup.Label</div>
                     }
-                    <div class="xbim-toolbar-group-items">
+                    <div class="octopus-toolbar-group-items">
                         @foreach (var radioButton in radioGroup.Items)
                         {
                             <button type="button" 
-                                    class="xbim-toolbar-btn xbim-toolbar-radio-btn @radioButton.CssClass @(radioButton.IsSelected ? "selected" : "") @(radioButton.Disabled ? "disabled" : "")"
+                                    class="octopus-toolbar-btn octopus-toolbar-radio-btn @radioButton.CssClass @(radioButton.IsSelected ? "selected" : "") @(radioButton.Disabled ? "disabled" : "")"
                                     title="@radioButton.Tooltip"
                                     disabled="@radioButton.Disabled"
                                     @onclick="async () => await HandleRadioSelection(radioGroup, radioButton)">
@@ -32,12 +32,12 @@
             }
             else if (item is ToolbarButtonGroup group)
             {
-                <div class="xbim-toolbar-group @group.CssClass" title="@group.Tooltip">
+                <div class="octopus-toolbar-group @group.CssClass" title="@group.Tooltip">
                     @if (!string.IsNullOrEmpty(group.Label))
                     {
-                        <div class="xbim-toolbar-group-label">@group.Label</div>
+                        <div class="octopus-toolbar-group-label">@group.Label</div>
                     }
-                    <div class="xbim-toolbar-group-items">
+                    <div class="octopus-toolbar-group-items">
                         @foreach (var groupItem in group.Items)
                         {
                             @RenderToolbarItem(groupItem)
@@ -78,7 +78,7 @@
         @if (item is ToolbarButton button && item is not ToolbarToggleButton && item is not ToolbarDropdown)
         {
             <button type="button" 
-                    class="xbim-toolbar-btn @button.CssClass @(button.Disabled ? "disabled" : "")"
+                    class="octopus-toolbar-btn @button.CssClass @(button.Disabled ? "disabled" : "")"
                     title="@button.Tooltip"
                     disabled="@button.Disabled"
                     @onclick="async () => await button.OnClick.InvokeAsync()">
@@ -91,7 +91,7 @@
         else if (item is ToolbarToggleButton toggle)
         {
             <button type="button" 
-                    class="xbim-toolbar-btn xbim-toolbar-toggle @toggle.CssClass @(toggle.IsToggled ? "active" : "") @(toggle.Disabled ? "disabled" : "")"
+                    class="octopus-toolbar-btn octopus-toolbar-toggle @toggle.CssClass @(toggle.IsToggled ? "active" : "") @(toggle.Disabled ? "disabled" : "")"
                     title="@(toggle.IsToggled && !string.IsNullOrEmpty(toggle.ToggledTooltip) ? toggle.ToggledTooltip : toggle.Tooltip)"
                     disabled="@toggle.Disabled"
                     @onclick="async () => await HandleToggle(toggle)">
@@ -104,9 +104,9 @@
         }
         else if (item is ToolbarDropdown dropdown)
         {
-            <div class="xbim-toolbar-dropdown @dropdown.CssClass">
+            <div class="octopus-toolbar-dropdown @dropdown.CssClass">
                 <button type="button" 
-                        class="xbim-toolbar-btn xbim-toolbar-dropdown-toggle"
+                        class="octopus-toolbar-btn octopus-toolbar-dropdown-toggle"
                         title="@dropdown.Tooltip"
                         disabled="@dropdown.Disabled"
                         @onclick="() => ToggleDropdown(dropdown.Id)">
@@ -116,15 +116,15 @@
                     }
                     @if (!string.IsNullOrEmpty(dropdown.Label))
                     {
-                        <span class="xbim-toolbar-label">@dropdown.Label</span>
+                        <span class="octopus-toolbar-label">@dropdown.Label</span>
                     }
                     <i class="bi bi-chevron-down"></i>
                 </button>
-                <div class="xbim-toolbar-dropdown-menu @(IsDropdownOpen(dropdown.Id) ? "show" : "")">
+                <div class="octopus-toolbar-dropdown-menu @(IsDropdownOpen(dropdown.Id) ? "show" : "")">
                     @foreach (var dropdownItem in dropdown.Items)
                     {
                         <button type="button"
-                                class="xbim-toolbar-dropdown-item @dropdownItem.CssClass"
+                                class="octopus-toolbar-dropdown-item @dropdownItem.CssClass"
                                 title="@dropdownItem.Tooltip"
                                 disabled="@dropdownItem.Disabled"
                                 @onclick="async () => { await dropdownItem.OnClick.InvokeAsync(); CloseDropdown(dropdown.Id); }">

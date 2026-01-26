@@ -49,11 +49,11 @@ jobs:
       run: dotnet restore
     
     - name: Compile TypeScript
-      run: npx tsc --project src/Xbim.WexBlazor/tsconfig.json
+      run: npx tsc --project src/Octopus.Blazor/tsconfig.json
     
     - name: Update version in csproj
       run: |
-        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Xbim.WexBlazor/Xbim.WexBlazor.csproj
+        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Blazor/Octopus.Blazor.csproj
         echo "Updated version to ${{ steps.get_version.outputs.version }}"
       shell: bash
       
@@ -64,7 +64,7 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal || echo "No tests found"
       
     - name: Pack NuGet package
-      run: dotnet pack src/Xbim.WexBlazor/Xbim.WexBlazor.csproj --configuration Release --no-build --output ./artifacts
+      run: dotnet pack src/Octopus.Blazor/Octopus.Blazor.csproj --configuration Release --no-build --output ./artifacts
       
     - name: Push to NuGet.org
       if: startsWith(github.ref, 'refs/tags/')
@@ -84,10 +84,10 @@ jobs:
         generate_release_notes: true
         body: |
           ## 📦 NuGet Package
-          This release is available on [NuGet.org](https://www.nuget.org/packages/Xbim.WexBlazor/${{ steps.get_version.outputs.version }})
+          This release is available on [NuGet.org](https://www.nuget.org/packages/Octopus.Blazor/${{ steps.get_version.outputs.version }})
           
           ```bash
-          dotnet add package Xbim.WexBlazor --version ${{ steps.get_version.outputs.version }}
+          dotnet add package Octopus.Blazor --version ${{ steps.get_version.outputs.version }}
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

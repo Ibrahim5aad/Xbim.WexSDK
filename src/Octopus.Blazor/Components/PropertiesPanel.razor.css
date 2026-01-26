@@ -1,9 +1,9 @@
 .properties-panel {
     position: absolute;
-    background: var(--xbim-bg-secondary);
-    border: 1px solid var(--xbim-border-primary);
+    background: var(--octopus-bg-secondary);
+    border: 1px solid var(--octopus-border-primary);
     border-radius: 8px;
-    box-shadow: var(--xbim-shadow-lg);
+    box-shadow: var(--octopus-shadow-lg);
     display: flex;
     flex-direction: column;
     max-height: 70vh;
@@ -42,7 +42,7 @@
 .properties-panel:not(.embedded).dragging {
     transition: none;
     z-index: 1000;
-    box-shadow: var(--xbim-shadow-xl);
+    box-shadow: var(--octopus-shadow-xl);
 }
 
 .properties-panel.visible {
@@ -84,21 +84,21 @@
     width: 40px;
     height: 40px;
     border-radius: 8px;
-    border: 1px solid var(--xbim-border-primary);
-    background: var(--xbim-bg-secondary);
-    color: var(--xbim-text-primary);
+    border: 1px solid var(--octopus-border-primary);
+    background: var(--octopus-bg-secondary);
+    color: var(--octopus-text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    box-shadow: var(--xbim-shadow-md);
+    box-shadow: var(--octopus-shadow-md);
 }
 
 .properties-toggle-button:hover {
-    background: var(--xbim-bg-hover);
-    border-color: var(--xbim-accent-primary);
-    color: var(--xbim-accent-primary);
+    background: var(--octopus-bg-hover);
+    border-color: var(--octopus-accent-primary);
+    color: var(--octopus-accent-primary);
     transform: scale(1.05);
 }
 
@@ -134,8 +134,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    border-bottom: 1px solid var(--xbim-border-primary);
-    background: var(--xbim-bg-tertiary);
+    border-bottom: 1px solid var(--octopus-border-primary);
+    background: var(--octopus-bg-tertiary);
     flex-shrink: 0;
     user-select: none;
 }
@@ -145,14 +145,14 @@
 }
 
 .properties-header.draggable-header:hover {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
 }
 
 .properties-title {
     margin: 0;
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -169,7 +169,7 @@
 }
 
 .properties-title i {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
 }
 
 .header-actions {
@@ -181,7 +181,7 @@
 .btn-close-panel {
     background: transparent;
     border: none;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     cursor: pointer;
     padding: 4px 8px;
     border-radius: 4px;
@@ -191,8 +191,8 @@
 
 .btn-header-action:hover,
 .btn-close-panel:hover {
-    background: var(--xbim-bg-hover);
-    color: var(--xbim-text-primary);
+    background: var(--octopus-bg-hover);
+    color: var(--octopus-text-primary);
 }
 
 /* Body */
@@ -209,7 +209,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 0.85rem;
 }
 
@@ -220,7 +220,7 @@
     align-items: center;
     justify-content: center;
     padding: 32px 16px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     text-align: center;
 }
 
@@ -244,14 +244,14 @@
 /* Element header */
 .element-header {
     padding: 12px;
-    border-bottom: 1px solid var(--xbim-border-primary);
-    background: var(--xbim-bg-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
+    background: var(--octopus-bg-primary);
 }
 
 .element-name {
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -275,7 +275,7 @@
 }
 
 .property-group {
-    border-bottom: 1px solid var(--xbim-border-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
 }
 
 .property-group:last-child {
@@ -288,45 +288,45 @@
     gap: 6px;
     padding: 10px 12px;
     cursor: pointer;
-    background: var(--xbim-bg-tertiary);
+    background: var(--octopus-bg-tertiary);
     transition: background 0.15s ease;
     user-select: none;
 }
 
 .property-group-header:hover {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
 }
 
 .property-group-header i {
     font-size: 0.7rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     transition: transform 0.15s ease;
 }
 
 .group-name {
     font-weight: 500;
     font-size: 0.85rem;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     flex: 1;
 }
 
 .group-count {
     font-size: 0.75rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
 }
 
 .group-source {
     font-size: 0.65rem;
     padding: 2px 6px;
-    background: var(--xbim-accent-primary-bg);
-    color: var(--xbim-accent-primary);
+    background: var(--octopus-accent-primary-bg);
+    color: var(--octopus-accent-primary);
     border-radius: 4px;
 }
 
 /* Property list */
 .property-list {
     padding: 4px 0;
-    background: var(--xbim-bg-primary);
+    background: var(--octopus-bg-primary);
 }
 
 .property-item {
@@ -335,7 +335,7 @@
     gap: 8px;
     padding: 6px 12px;
     font-size: 0.8rem;
-    border-bottom: 1px solid var(--xbim-border-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
 }
 
 .property-item:last-child {
@@ -343,36 +343,36 @@
 }
 
 .property-item:hover {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
 }
 
 .property-name {
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .property-value {
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     word-break: break-word;
     text-align: right;
 }
 
 .value-empty {
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     opacity: 0.5;
 }
 
 .value-unit {
     font-size: 0.7rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     margin-left: 2px;
 }
 
 /* Value type styling */
 .value-boolean {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
 }
 
 .value-integer,
@@ -395,10 +395,10 @@
 }
 
 .properties-body::-webkit-scrollbar-thumb {
-    background: var(--xbim-border-primary);
+    background: var(--octopus-border-primary);
     border-radius: 3px;
 }
 
 .properties-body::-webkit-scrollbar-thumb:hover {
-    background: var(--xbim-text-secondary);
+    background: var(--octopus-text-secondary);
 }

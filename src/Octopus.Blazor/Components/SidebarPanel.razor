@@ -1,6 +1,6 @@
-@using Xbim.WexBlazor.Models
+@using Octopus.Blazor.Models
 @using Microsoft.JSInterop
-@namespace Xbim.WexBlazor.Components
+@namespace Octopus.Blazor.Components
 @implements IDisposable
 @inject IJSRuntime JSRuntime
 
@@ -140,7 +140,7 @@
         if (_jsModule == null)
         {
             _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/Xbim.WexBlazor/js/sidebarPanelResize.js");
+                "import", "./_content/Octopus.Blazor/js/sidebarPanelResize.js");
         }
 
         var isLeftSide = _parentSidebar.Position == SidebarPosition.Left;

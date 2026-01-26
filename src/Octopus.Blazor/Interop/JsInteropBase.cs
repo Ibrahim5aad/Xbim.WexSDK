@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Xbim.WexBlazor.Interop;
+namespace Octopus.Blazor.Interop;
 
 /// <summary>
 /// Base class for JavaScript interop functionality

@@ -1,4 +1,4 @@
-@import url('../_content/Octopus.Blazor/css/themes.css');
+@import url('/_content/Octopus.Blazor/css/themes.css');
 
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -6,8 +6,8 @@ html, body {
 }
 
 body {
-    background-color: var(--xbim-bg-primary);
-    color: var(--xbim-text-primary);
+    background-color: var(--octopus-bg-primary);
+    color: var(--octopus-text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -20,13 +20,13 @@ h1:focus {
 }
 
 a, .btn-link {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
 }
 
 .btn-primary {
     color: #fff;
-    background-color: var(--xbim-accent-primary);
-    border-color: var(--xbim-accent-primary);
+    background-color: var(--octopus-accent-primary);
+    border-color: var(--octopus-accent-primary);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {

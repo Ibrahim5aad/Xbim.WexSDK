@@ -1,14 +1,14 @@
 @using Microsoft.JSInterop
 @using System.Text.Json
-@using Xbim.WexBlazor.Interop
-@using Xbim.WexBlazor.Models
+@using Octopus.Blazor.Interop
+@using Octopus.Blazor.Models
 @implements IAsyncDisposable
 
 @inject IJSRuntime JSRuntime
 
 <CascadingValue Value="this" IsFixed="false">
-    <div class="xbim-viewer-container" style="@ContainerStyle">
-        <div class="xbim-canvas-wrapper">
+    <div class="octopus-viewer-container" style="@ContainerStyle">
+        <div class="octopus-canvas-wrapper">
             <canvas id="@Id" width="@Width" height="@Height"></canvas>
         </div>
         @ChildContent
@@ -16,12 +16,12 @@
 </CascadingValue>
 
 @code {
-    private XbimViewerInterop? _xbimViewer;
+    private OctopusViewerInterop? _viewer;
     private string? _viewerId;
     private bool _isInteractive = false;
     private bool _viewerInitialized = false;
     private bool _modelLoaded = false;
-    private DotNetObjectReference<XbimViewerComponent>? _dotNetHelper;
+    private DotNetObjectReference<OctopusViewer>? _dotNetRef;
     private readonly Dictionary<int, LoadedModel> _loadedModels = new();
     private readonly Dictionary<string, ViewerPlugin> _plugins = new();
     private readonly HashSet<(int ElementId, int ModelId)> _highlightedElements = new();
@@ -170,18 +170,18 @@
         if (!_isInteractive)
             return;
 
-        _xbimViewer = new XbimViewerInterop(JSRuntime);
-        await _xbimViewer.InitializeAsync();
+        _viewer = new OctopusViewerInterop(JSRuntime);
+        await _viewer.InitializeAsync();
 
-        _dotNetHelper = DotNetObjectReference.Create(this);
+        _dotNetRef = DotNetObjectReference.Create(this);
 
-        _viewerId = await _xbimViewer.InitViewerAsync(Id);
+        _viewerId = await _viewer.InitViewerAsync(Id);
         
         if (!string.IsNullOrEmpty(_viewerId))
         {
             _viewerInitialized = true;
             
-            await _xbimViewer.SetBackgroundColorAsync(_viewerId, BackgroundColor);
+            await _viewer.SetBackgroundColorAsync(_viewerId, BackgroundColor);
             
             await RegisterEventHandlersAsync();
             
@@ -199,26 +199,26 @@
     /// </summary>
     private async Task RegisterEventHandlersAsync()
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || _dotNetHelper == null)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || _dotNetRef == null)
             return;
 
         if (OnLoaded.HasDelegate)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "loaded", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "loaded", _dotNetRef);
 
         if (AutoToggleHighlight || OnPick.HasDelegate || Pick != null)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "pick", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "pick", _dotNetRef);
 
         if (OnHoverPick.HasDelegate)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "hoverpick", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "hoverpick", _dotNetRef);
 
         if (OnClick.HasDelegate)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "click", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "click", _dotNetRef);
 
         if (OnDoubleClick.HasDelegate)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "dblclick", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "dblclick", _dotNetRef);
 
         if (OnError.HasDelegate)
-            await _xbimViewer.AddEventListenerAsync(_viewerId, "error", _dotNetHelper);
+            await _viewer.AddEventListenerAsync(_viewerId, "error", _dotNetRef);
     }
 
     /// <summary>
@@ -283,9 +283,9 @@
     /// </summary>
     public async Task<LoadedModel?> LoadModelAsync(string modelUrl, string? modelName = null, ModelSourceType sourceType = ModelSourceType.Url)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            var modelId = await _xbimViewer.LoadModelAsync(_viewerId, modelUrl);
+            var modelId = await _viewer.LoadModelAsync(_viewerId, modelUrl);
             
             if (modelId.HasValue)
             {
@@ -302,7 +302,7 @@
                 _loadedModels[modelId.Value] = loadedModel;
                 _modelLoaded = true;
                 
-                await _xbimViewer.StartAsync(_viewerId);
+                await _viewer.StartAsync(_viewerId);
                 await OnModelLoaded.InvokeAsync(true);
                 await RaiseModelChangedAsync(loadedModel, ModelChangeType.Loaded);
                 
@@ -345,10 +345,10 @@
     /// </summary>
     public async Task<bool> UnloadModelAsync(int modelId)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return false;
 
-        var success = await _xbimViewer.UnloadModelAsync(_viewerId, modelId);
+        var success = await _viewer.UnloadModelAsync(_viewerId, modelId);
         
         if (success && _loadedModels.TryGetValue(modelId, out var model))
         {
@@ -381,10 +381,10 @@
     /// </summary>
     public async Task<bool> SetModelStartedAsync(int modelId, bool started)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return false;
 
-        var success = await _xbimViewer.SetModelVisibilityAsync(_viewerId, modelId, started);
+        var success = await _viewer.SetModelVisibilityAsync(_viewerId, modelId, started);
         
         if (success && _loadedModels.TryGetValue(modelId, out var model))
         {
@@ -441,11 +441,11 @@
     /// </summary>
     public async Task<bool> AddPluginAsync(ViewerPlugin plugin)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return false;
 
         var config = plugin.GetConfiguration();
-        var success = await _xbimViewer.AddPluginAsync(_viewerId, plugin.Id, plugin.PluginType, config);
+        var success = await _viewer.AddPluginAsync(_viewerId, plugin.Id, plugin.PluginType, config);
         
         if (success)
         {
@@ -460,10 +460,10 @@
     /// </summary>
     public async Task<bool> RemovePluginAsync(string pluginId)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return false;
 
-        var success = await _xbimViewer.RemovePluginAsync(_viewerId, pluginId);
+        var success = await _viewer.RemovePluginAsync(_viewerId, pluginId);
         
         if (success)
         {
@@ -486,10 +486,10 @@
     /// </summary>
     public async Task<bool> SetPluginStoppedAsync(string pluginId, bool stopped)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return false;
 
-        var success = await _xbimViewer.SetPluginStoppedAsync(_viewerId, pluginId, stopped);
+        var success = await _viewer.SetPluginStoppedAsync(_viewerId, pluginId, stopped);
         
         if (success && _plugins.TryGetValue(pluginId, out var plugin))
         {
@@ -528,9 +528,9 @@
     /// </summary>
     public async Task<bool> UnclipAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.UnclipAsync(_viewerId);
+            return await _viewer.UnclipAsync(_viewerId);
         }
         
         return false;
@@ -541,9 +541,9 @@
     /// </summary>
     public async Task<bool> CreateSectionBoxAsync(string pluginId)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.CreateSectionBoxAsync(_viewerId, pluginId);
+            return await _viewer.CreateSectionBoxAsync(_viewerId, pluginId);
         }
         
         return false;
@@ -554,9 +554,9 @@
     /// </summary>
     public async Task<bool> ClearSectionBoxAsync(string pluginId)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.ClearSectionBoxAsync(_viewerId, pluginId);
+            return await _viewer.ClearSectionBoxAsync(_viewerId, pluginId);
         }
         
         return false;
@@ -567,9 +567,9 @@
     /// </summary>
     public async Task<bool> SetBackgroundColorAsync(string color)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.SetBackgroundColorAsync(_viewerId, color);
+            return await _viewer.SetBackgroundColorAsync(_viewerId, color);
         }
         
         return false;
@@ -582,9 +582,9 @@
     /// <returns>True if successful</returns>
     public async Task<bool> SetHighlightingColorAsync(string color)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.SetHighlightingColorAsync(_viewerId, color);
+            return await _viewer.SetHighlightingColorAsync(_viewerId, color);
         }
         
         return false;
@@ -597,9 +597,9 @@
     /// <returns>True if successful</returns>
     public async Task<bool> SetHoverPickColorAsync(string color)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.SetHoverPickColorAsync(_viewerId, color);
+            return await _viewer.SetHoverPickColorAsync(_viewerId, color);
         }
         
         return false;
@@ -610,9 +610,9 @@
     /// </summary>
     public async Task<bool> ZoomFitAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.ZoomFitAsync(_viewerId);
+            return await _viewer.ZoomFitAsync(_viewerId);
         }
         
         return false;
@@ -623,9 +623,9 @@
     /// </summary>
     public async Task<bool> ResetAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.ResetAsync(_viewerId);
+            return await _viewer.ResetAsync(_viewerId);
         }
         
         return false;
@@ -633,9 +633,9 @@
 
     public async Task<bool> ShowAsync(int viewType, int? id = null, int? model = null, bool withAnimation = true)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.ShowAsync(_viewerId, viewType, id, model, withAnimation);
+            return await _viewer.ShowAsync(_viewerId, viewType, id, model, withAnimation);
         }
         
         return false;
@@ -646,9 +646,9 @@
     /// </summary>
     public async Task<T?> CallViewerMethodAsync<T>(string methodName, params object[] args)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
-            return await _xbimViewer.InvokeViewerMethodAsync<T>(_viewerId, methodName, args);
+            return await _viewer.InvokeViewerMethodAsync<T>(_viewerId, methodName, args);
         }
         
         return default;
@@ -659,9 +659,9 @@
     /// </summary>
     public async Task<bool> HighlightElementsAsync(int[] elementIds, int? modelId = null)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            var result = await _xbimViewer.HighlightElementsAsync(_viewerId, elementIds, modelId);
+            var result = await _viewer.HighlightElementsAsync(_viewerId, elementIds, modelId);
             if (result)
             {
                 var mid = modelId ?? 0;
@@ -680,9 +680,9 @@
     /// </summary>
     public async Task<bool> UnhighlightElementsAsync(int[] elementIds, int? modelId = null)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            var result = await _xbimViewer.UnhighlightElementsAsync(_viewerId, elementIds, modelId);
+            var result = await _viewer.UnhighlightElementsAsync(_viewerId, elementIds, modelId);
             if (result)
             {
                 var mid = modelId ?? 0;
@@ -701,9 +701,9 @@
     /// </summary>
     public async Task<bool> IsElementHighlightedAsync(int elementId, int? modelId = null)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.IsElementHighlightedAsync(_viewerId, elementId, modelId);
+            return await _viewer.IsElementHighlightedAsync(_viewerId, elementId, modelId);
         }
         
         return false;
@@ -714,9 +714,9 @@
     /// </summary>
     public async Task<bool> AddToSelectionAsync(int[] elementIds, int? modelId = null)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.AddToSelectionAsync(_viewerId, elementIds, modelId);
+            return await _viewer.AddToSelectionAsync(_viewerId, elementIds, modelId);
         }
         
         return false;
@@ -727,9 +727,9 @@
     /// </summary>
     public async Task<bool> RemoveFromSelectionAsync(int[] elementIds, int? modelId = null)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.RemoveFromSelectionAsync(_viewerId, elementIds, modelId);
+            return await _viewer.RemoveFromSelectionAsync(_viewerId, elementIds, modelId);
         }
         
         return false;
@@ -740,9 +740,9 @@
     /// </summary>
     public async Task<bool> ClearSelectionAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            var result = await _xbimViewer.ClearSelectionAsync(_viewerId);
+            var result = await _viewer.ClearSelectionAsync(_viewerId);
             if (result)
             {
                 _highlightedElements.Clear();
@@ -759,9 +759,9 @@
     /// </summary>
     public async Task<SelectedElement[]> GetSelectedElementsAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.GetSelectedElementsAsync(_viewerId);
+            return await _viewer.GetSelectedElementsAsync(_viewerId);
         }
         
         return Array.Empty<SelectedElement>();
@@ -772,9 +772,9 @@
     /// </summary>
     public async Task<bool> HideElementsAsync(int[] elementIds)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.HideElementsAsync(_viewerId, elementIds);
+            return await _viewer.HideElementsAsync(_viewerId, elementIds);
         }
         
         return false;
@@ -785,9 +785,9 @@
     /// </summary>
     public async Task<bool> ShowElementsAsync(int[] elementIds)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.ShowElementsAsync(_viewerId, elementIds);
+            return await _viewer.ShowElementsAsync(_viewerId, elementIds);
         }
         
         return false;
@@ -798,9 +798,9 @@
     /// </summary>
     public async Task<bool> UnhideAllElementsAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.UnhideAllElementsAsync(_viewerId);
+            return await _viewer.UnhideAllElementsAsync(_viewerId);
         }
 
         return false;
@@ -811,9 +811,9 @@
     /// </summary>
     public async Task<bool> IsolateElementsAsync(int[] elementIds)
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.IsolateElementsAsync(_viewerId, elementIds);
+            return await _viewer.IsolateElementsAsync(_viewerId, elementIds);
         }
         
         return false;
@@ -824,9 +824,9 @@
     /// </summary>
     public async Task<bool> UnisolateElementsAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.UnisolateElementsAsync(_viewerId);
+            return await _viewer.UnisolateElementsAsync(_viewerId);
         }
         
         return false;
@@ -838,9 +838,9 @@
     /// <returns>Array of isolated element IDs</returns>
     public async Task<int[]> GetIsolatedElementsAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized && _modelLoaded)
         {
-            return await _xbimViewer.GetIsolatedElementsAsync(_viewerId);
+            return await _viewer.GetIsolatedElementsAsync(_viewerId);
         }
         
         return Array.Empty<int>();
@@ -848,10 +848,10 @@
 
     public async Task<List<ProductTypeInfo>> GetProductTypesAsync(int? modelId = null)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
             return new List<ProductTypeInfo>();
 
-        var results = await _xbimViewer.GetModelProductTypesAsync(_viewerId, modelId);
+        var results = await _viewer.GetModelProductTypesAsync(_viewerId, modelId);
         return results.Select(r => new ProductTypeInfo
         {
             TypeId = r.TypeId,
@@ -865,18 +865,18 @@
 
     public async Task<int?> GetProductTypeAsync(int productId, int? modelId = null)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized)
             return null;
 
-        return await _xbimViewer.GetProductTypeAsync(_viewerId, productId, modelId);
+        return await _viewer.GetProductTypeAsync(_viewerId, productId, modelId);
     }
 
     public async Task<int[]> GetProductsOfTypeAsync(int typeId, int? modelId = null)
     {
-        if (_xbimViewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
+        if (_viewer == null || string.IsNullOrEmpty(_viewerId) || !_viewerInitialized || !_modelLoaded)
             return Array.Empty<int>();
 
-        return await _xbimViewer.GetProductsOfTypeAsync(_viewerId, typeId, modelId);
+        return await _viewer.GetProductsOfTypeAsync(_viewerId, typeId, modelId);
     }
 
     /// <summary>
@@ -884,12 +884,12 @@
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        if (_xbimViewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
+        if (_viewer != null && !string.IsNullOrEmpty(_viewerId) && _viewerInitialized)
         {
             try
             {
-                await _xbimViewer.DisposeViewerAsync(_viewerId);
-                await _xbimViewer.DisposeAsync();
+                await _viewer.DisposeViewerAsync(_viewerId);
+                await _viewer.DisposeAsync();
             }
             catch (JSDisconnectedException)
             {
@@ -897,6 +897,6 @@
             }
         }
 
-        _dotNetHelper?.Dispose();
+        _dotNetRef?.Dispose();
     }
 } 

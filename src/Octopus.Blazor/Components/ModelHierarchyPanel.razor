@@ -1,6 +1,6 @@
-@using Xbim.WexBlazor.Models
-@using Xbim.WexBlazor.Services
-@namespace Xbim.WexBlazor.Components
+@using Octopus.Blazor.Models
+@using Octopus.Blazor.Services
+@namespace Octopus.Blazor.Components
 @implements IDisposable
 @inject IfcHierarchyService? HierarchyService
 
@@ -159,7 +159,7 @@
 
 @code {
     [CascadingParameter]
-    public XbimViewerComponent? Viewer { get; set; }
+    public OctopusViewer? Viewer { get; set; }
 
     [Parameter]
     public bool IsVisible { get; set; } = true;

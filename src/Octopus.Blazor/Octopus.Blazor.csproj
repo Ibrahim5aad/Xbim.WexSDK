@@ -6,14 +6,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TypeScriptCompileBlocked>false</TypeScriptCompileBlocked>
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
-    <PackageId>Xbim.WexBlazor</PackageId>
+    <PackageId>Octopus.Blazor</PackageId>
+    <RootNamespace>Octopus.Blazor</RootNamespace>
+    <AssemblyName>Octopus.Blazor</AssemblyName>
     <Version>1.7.0</Version>
     <Authors>Ibrahim Saad</Authors>
     <Company>Ibrahim Saad</Company>
     <Description>A Blazor wrapper for the xBIM Viewer, providing seamless integration of 3D BIM model visualization in Blazor WebAssembly applications. Includes model management, toolbar system, and plugin support.</Description>
     <PackageTags>blazor;xbim;bim;3d-viewer;ifc;wexbim;webgl;building-information-modeling</PackageTags>
-    <PackageProjectUrl>https://github.com/Ibrahim5aad/Xbim.WexBlazor</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Ibrahim5aad/Xbim.WexBlazor</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Ibrahim5aad/Octopus</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Ibrahim5aad/Octopus</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -41,14 +43,10 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Web.LibraryManager.Build" Version="3.0.71" />
     <PackageReference Include="Xbim.Essentials" Version="6.0.563" />
-    <!-- xBIM Geometry Engine v6 for IFC to wexbim conversion (server-side only) -->
     <PackageReference Include="Xbim.Geometry.Engine.Interop" Version="6.3.873-netcore" />
     <PackageReference Include="Xbim.ModelGeometry.Scene" Version="6.3.873-netcore" />
   </ItemGroup>
 
-  <!-- Include the generated JavaScript files in the package -->
-
-  <!-- TypeScript configuration -->
   <PropertyGroup>
     <TypeScriptSourceRoot>$(MSBuildProjectDirectory)\wwwroot\ts</TypeScriptSourceRoot>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
@@ -64,12 +62,10 @@
     <TypeScriptJSXEmit>None</TypeScriptJSXEmit>
   </PropertyGroup>
 
-  <!-- Include TypeScript files for compilation -->
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\ts\**\*.ts" />
   </ItemGroup>
 
-  <!-- Make sure the JS output directory exists -->
   <Target Name="EnsureJsDirectoryExists" BeforeTargets="BeforeBuild">
     <MakeDir Directories="$(MSBuildProjectDirectory)\wwwroot\js" />
   </Target>

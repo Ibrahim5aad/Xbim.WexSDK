@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Components;
-using Xbim.WexBlazor.Models;
-using static Xbim.WexBlazor.Models.ViewerConstants;
+using Octopus.Blazor.Models;
+using static Octopus.Blazor.Models.ViewerConstants;
 
-namespace Xbim.WexBlazor.Components.BuiltInButtons;
+namespace Octopus.Blazor.Components.BuiltInButtons;
 
 /// <summary>
 /// Factory for creating built-in toolbar buttons
@@ -13,7 +13,7 @@ public static class ViewerBuiltInButtons
     /// Creates a perspective toggle button (Orthogonal/Perspective camera)
     /// </summary>
     public static ToolbarToggleButton CreatePerspectiveToggle(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         bool startWithPerspective = true)
     {
         return new ToolbarToggleButton
@@ -34,7 +34,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates a zoom to fit button
     /// </summary>
-    public static ToolbarButton CreateZoomFitButton(XbimViewerComponent viewer)
+    public static ToolbarButton CreateZoomFitButton(OctopusViewer viewer)
     {
         return new ToolbarButton
         {
@@ -50,7 +50,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates a reset view button
     /// </summary>
-    public static ToolbarButton CreateResetViewButton(XbimViewerComponent viewer)
+    public static ToolbarButton CreateResetViewButton(OctopusViewer viewer)
     {
         return new ToolbarButton
         {
@@ -66,7 +66,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates a clear selection button
     /// </summary>
-    public static ToolbarButton CreateClearSelectionButton(XbimViewerComponent viewer)
+    public static ToolbarButton CreateClearSelectionButton(OctopusViewer viewer)
     {
         return new ToolbarButton
         {
@@ -82,7 +82,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates a view dropdown with preset camera angles
     /// </summary>
-    public static ToolbarDropdown CreateViewsDropdown(XbimViewerComponent viewer)
+    public static ToolbarDropdown CreateViewsDropdown(OctopusViewer viewer)
     {
         return new ToolbarDropdown
         {
@@ -151,7 +151,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates an X-Ray mode toggle button
     /// </summary>
-    public static ToolbarToggleButton CreateXRayToggle(XbimViewerComponent viewer)
+    public static ToolbarToggleButton CreateXRayToggle(OctopusViewer viewer)
     {
         return new ToolbarToggleButton
         {
@@ -183,7 +183,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates a hide/unhide toggle button for highlighted elements
     /// </summary>
-    public static ToolbarToggleButton CreateHideToggle(XbimViewerComponent viewer)
+    public static ToolbarToggleButton CreateHideToggle(OctopusViewer viewer)
     {
         return CreateHideToggle(viewer, () => viewer.HighlightedElementIds, null);
     }
@@ -192,7 +192,7 @@ public static class ViewerBuiltInButtons
     /// Creates a hide/unhide toggle button for selected elements
     /// </summary>
     public static ToolbarToggleButton CreateHideToggle(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         Func<int[]> getSelectedElements,
         Action? onStateChanged = null)
     {
@@ -225,7 +225,7 @@ public static class ViewerBuiltInButtons
     /// <summary>
     /// Creates an isolate/unisolate toggle button for highlighted elements
     /// </summary>
-    public static ToolbarToggleButton CreateIsolateToggle(XbimViewerComponent viewer)
+    public static ToolbarToggleButton CreateIsolateToggle(OctopusViewer viewer)
     {
         return CreateIsolateToggle(viewer, () => viewer.HighlightedElementIds, null);
     }
@@ -234,7 +234,7 @@ public static class ViewerBuiltInButtons
     /// Creates an isolate/unisolate toggle button for selected elements
     /// </summary>
     public static ToolbarToggleButton CreateIsolateToggle(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         Func<int[]> getSelectedElements,
         Action? onStateChanged = null)
     {
@@ -273,7 +273,7 @@ public static class ViewerBuiltInButtons
     /// <param name="onStateChanged">Optional callback to trigger UI update when button state changes</param>
     /// <returns>A toolbar button group for clipping plane control</returns>
     public static ToolbarButtonGroup CreateClippingPlaneButtons(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         Func<ClippingPlanePlugin?> getPlugin,
         string? label = "Clipping",
         Action? onStateChanged = null)
@@ -344,7 +344,7 @@ public static class ViewerBuiltInButtons
     /// <param name="onStateChanged">Optional callback to trigger UI update when button state changes</param>
     /// <returns>A toolbar button group for section box control</returns>
     public static ToolbarButtonGroup CreateSectionBoxButtons(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         Func<SectionBoxPlugin?> getPlugin,
         string? label = "Section Box",
         Action? onStateChanged = null)
@@ -409,7 +409,7 @@ public static class ViewerBuiltInButtons
     /// Creates a navigation controls radio button group where only one navigation mode can be active
     /// </summary>
     public static ToolbarRadioButtonGroup CreateNavigationButtons(
-        XbimViewerComponent viewer,
+        OctopusViewer viewer,
         string? label = "Navigation",
         int defaultSelectedIndex = 0)
     {

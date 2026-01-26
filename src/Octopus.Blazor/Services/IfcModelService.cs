@@ -4,9 +4,9 @@ using Xbim.Common.Geometry;
 using Xbim.Ifc;
 using Xbim.IO;
 using Xbim.ModelGeometry.Scene;
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Models;
 
-namespace Xbim.WexBlazor.Services;
+namespace Octopus.Blazor.Services;
 
 /// <summary>
 /// Result of processing an IFC file

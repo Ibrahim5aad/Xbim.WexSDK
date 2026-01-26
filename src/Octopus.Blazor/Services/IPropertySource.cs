@@ -1,6 +1,6 @@
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Models;
 
-namespace Xbim.WexBlazor.Services;
+namespace Octopus.Blazor.Services;
 
 /// <summary>
 /// Interface for property sources that can provide element properties

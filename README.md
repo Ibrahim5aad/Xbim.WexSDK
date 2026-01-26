@@ -1,17 +1,17 @@
-# Xbim.WexBlazor
+# Octopus.Blazor
 
-[![NuGet](https://img.shields.io/nuget/v/Xbim.WexBlazor.svg?style=flat-square)](https://www.nuget.org/packages/Xbim.WexBlazor/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Xbim.WexBlazor.svg?style=flat-square)](https://www.nuget.org/packages/Xbim.WexBlazor/)
-[![Build Status](https://github.com/Ibrahim5aad/Xbim.WexBlazor/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/Ibrahim5aad/Xbim.WexBlazor/actions/workflows/publish-nuget.yml)
+[![NuGet](https://img.shields.io/nuget/v/Octopus.Blazor.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Blazor/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Octopus.Blazor.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Blazor/)
+[![Build Status](https://github.com/Ibrahim5aad/Octopus/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/Ibrahim5aad/Octopus/actions/workflows/publish-nuget.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Blazor component library that wraps the @xbim/viewer JavaScript library for use in Blazor applications. This library allows you to display 3D building models in the wexBIM format. **Blazor Server applications can also load IFC files directly**, which are automatically converted to wexBIM format for visualization.
 
-![Xbim.WexBlazor in action](screenshot.png)
+![Octopus.Blazor in action](screenshot.png)
 
 ## Project Structure
 
-- **Xbim.WexBlazor**: The component library project
+- **Octopus.Blazor**: The component library project
   - **Components/**: Blazor components (Viewer, Sidebar, Panels, etc.)
   - **Interop/**: JavaScript interop services
   - **Models/**: Data models and enums
@@ -19,8 +19,8 @@ A Blazor component library that wraps the @xbim/viewer JavaScript library for us
   - **wwwroot/js/**: JavaScript interop modules
   - **wwwroot/lib/**: Third-party libraries (xBIM Viewer)
 
-- **Xbim.WexBlazor.Sample**: WebAssembly sample application showcasing the library
-- **Xbim.WexBlazor.Server.Sample**: Blazor Server sample application with IFC file loading support
+- **Octopus.Blazor.Sample**: WebAssembly sample application showcasing the library
+- **Octopus.Blazor.Server.Sample**: Blazor Server sample application with IFC file loading support
 
 ## Features
 
@@ -39,13 +39,13 @@ A Blazor component library that wraps the @xbim/viewer JavaScript library for us
 Install the package from NuGet:
 
 ```bash
-dotnet add package Xbim.WexBlazor
+dotnet add package Octopus.Blazor
 ```
 
 Or via the Visual Studio Package Manager:
 
 ```
-Install-Package Xbim.WexBlazor
+Install-Package Octopus.Blazor
 ```
 
 ## Getting Started
@@ -55,14 +55,14 @@ Install-Package Xbim.WexBlazor
 Then add the following to your `_Imports.razor` file:
 
 ```razor
-@using Xbim.WexBlazor
-@using Xbim.WexBlazor.Components
+@using Octopus.Blazor
+@using Octopus.Blazor.Components
 ```
 
-Example usage of the xBIM Viewer component:
+Example usage of the Octopus Viewer component:
 
 ```razor
-<XbimViewerComponent Id="myViewer"
+<OctopusViewer Id="myViewer"
                     Width="800"
                     Height="600"
                     BackgroundColor="#F5F5F5"
@@ -92,8 +92,8 @@ The library supports light and dark themes with customizable accent colors.
 Register the `ThemeService` in your `Program.cs`:
 
 ```csharp
-using Xbim.WexBlazor.Services;
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Services;
+using Octopus.Blazor.Models;
 
 var themeService = new ThemeService();
 themeService.SetTheme(ViewerTheme.Dark);
@@ -173,7 +173,7 @@ To read properties from IFC files, you need to load the IFC model using xBIM Ess
 
 ```csharp
 using Xbim.Ifc;
-using Xbim.WexBlazor.Services;
+using Octopus.Blazor.Services;
 
 // Load IFC model
 var model = IfcStore.Open("path/to/model.ifc");
@@ -190,9 +190,9 @@ propertyService.RegisterSource(propertySource);
 The `PropertiesPanel` auto-injects `PropertyService` and subscribes to pick events:
 
 ```razor
-<XbimViewerComponent @ref="_viewer" ...>
+<OctopusViewer @ref="_viewer" ...>
     <PropertiesPanel />
-</XbimViewerComponent>
+</OctopusViewer>
 ```
 
 ### Custom Property Source Example
@@ -270,10 +270,10 @@ The library includes a flexible sidebar system that allows you to dock panels al
 
 ### Using ViewerSidebar
 
-The `ViewerSidebar` component provides a dockable sidebar with icon-based panel management. Panels inside the sidebar automatically receive the `XbimViewerComponent` via cascading parameters:
+The `ViewerSidebar` component provides a dockable sidebar with icon-based panel management. Panels inside the sidebar automatically receive the `OctopusViewer` via cascading parameters:
 
 ```razor
-<XbimViewerComponent @ref="_viewer" ...>
+<OctopusViewer @ref="_viewer" ...>
     <ViewerSidebar Position="SidebarPosition.Left">
         <SidebarPanel Title="Properties" Icon="bi-info-circle" @bind-IsOpen="_showProperties">
             <PropertiesPanel ShowHeader="false" />
@@ -283,7 +283,7 @@ The `ViewerSidebar` component provides a dockable sidebar with icon-based panel 
             <ModelHierarchyPanel ShowHeader="false" />
         </SidebarPanel>
     </ViewerSidebar>
-</XbimViewerComponent>
+</OctopusViewer>
 ```
 
 Both `PropertiesPanel` and `ModelHierarchyPanel` are self-contained - they automatically inject their required services and subscribe to viewer events.
@@ -321,9 +321,9 @@ The `ModelHierarchyPanel` displays model structure in two tabs:
 The panel auto-refreshes when models are loaded/unloaded and supports multiple models with collapsible headers.
 
 ```razor
-<XbimViewerComponent @ref="_viewer" ...>
+<OctopusViewer @ref="_viewer" ...>
     <ModelHierarchyPanel />
-</XbimViewerComponent>
+</OctopusViewer>
 ```
 
 For spatial structure (Blazor Server only), register `IfcHierarchyService`:
@@ -419,10 +419,10 @@ The viewer requires 3D models in the wexBIM format. You can convert IFC models t
 To build and run the sample project:
 
 ```bash
-git clone https://github.com/Ibrahim5aad/Xbim.WexBlazor.git
-cd Xbim.WexBlazor
+git clone https://github.com/Ibrahim5aad/Octopus.git
+cd Octopus
 dotnet build
-dotnet run --project src/Xbim.WexBlazor.Sample/Xbim.WexBlazor.Sample.csproj
+dotnet run --project src/Octopus.Blazor.Sample/Octopus.Blazor.Sample.csproj
 ```
 
 ## License

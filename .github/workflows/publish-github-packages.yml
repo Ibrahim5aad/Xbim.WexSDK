@@ -44,11 +44,11 @@ jobs:
       run: dotnet restore
     
     - name: Compile TypeScript
-      run: npx tsc --project src/Xbim.WexBlazor/tsconfig.json
+      run: npx tsc --project src/Octopus.Blazor/tsconfig.json
     
     - name: Update version in csproj
       run: |
-        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Xbim.WexBlazor/Xbim.WexBlazor.csproj
+        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Blazor/Octopus.Blazor.csproj
         echo "Updated version to ${{ steps.get_version.outputs.version }}"
       shell: bash
       
@@ -56,7 +56,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
       
     - name: Pack NuGet package
-      run: dotnet pack src/Xbim.WexBlazor/Xbim.WexBlazor.csproj --configuration Release --no-build --output ./artifacts
+      run: dotnet pack src/Octopus.Blazor/Octopus.Blazor.csproj --configuration Release --no-build --output ./artifacts
       
     - name: Push to GitHub Packages
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --skip-duplicate

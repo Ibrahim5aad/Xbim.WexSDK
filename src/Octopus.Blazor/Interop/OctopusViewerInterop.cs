@@ -2,16 +2,16 @@ using Microsoft.JSInterop;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Xbim.WexBlazor.Interop;
+namespace Octopus.Blazor.Interop;
 
 /// <summary>
-/// JavaScript interop for xBIM Viewer
+/// JavaScript interop for Octopus Viewer
 /// </summary>
-public class XbimViewerInterop : JsInteropBase
+public class OctopusViewerInterop : JsInteropBase
 {
-    private static readonly string ModulePath = "./_content/Xbim.WexBlazor/js/xbimViewerInterop.js";
+    private static readonly string ModulePath = "./_content/Octopus.Blazor/js/octopusViewerInterop.js";
 
-    public XbimViewerInterop(IJSRuntime jsRuntime) 
+    public OctopusViewerInterop(IJSRuntime jsRuntime) 
         : base(jsRuntime, ModulePath)
     {
     }

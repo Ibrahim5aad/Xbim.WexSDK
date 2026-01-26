@@ -1,6 +1,6 @@
-@using Xbim.WexBlazor.Models
+@using Octopus.Blazor.Models
 @using Microsoft.JSInterop
-@namespace Xbim.WexBlazor.Components
+@namespace Octopus.Blazor.Components
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
@@ -128,8 +128,8 @@
                 (function() {{
                     var sidebar = document.querySelector('.viewer-sidebar');
                     if (sidebar) {{
-                        var container = sidebar.closest('.xbim-viewer-container');
-                        var wrapper = container?.querySelector('.xbim-canvas-wrapper');
+                        var container = sidebar.closest('.octopus-viewer-container');
+                        var wrapper = container?.querySelector('.octopus-canvas-wrapper');
                         if (wrapper && container) {{
                             wrapper.style.{side} = '{panelWidth}px';
                             container.style.setProperty('--sidebar-left-offset', '{leftOffset}px');
@@ -153,8 +153,8 @@
         {
             await JSRuntime.InvokeVoidAsync("eval", @"
                 (function() {
-                    var container = document.querySelector('.xbim-viewer-container');
-                    var wrapper = container?.querySelector('.xbim-canvas-wrapper');
+                    var container = document.querySelector('.octopus-viewer-container');
+                    var wrapper = container?.querySelector('.octopus-canvas-wrapper');
                     if (wrapper && container) {
                         wrapper.style.left = '0';
                         wrapper.style.right = '0';

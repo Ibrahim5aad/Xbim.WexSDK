@@ -1,6 +1,6 @@
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Models;
 
-namespace Xbim.WexBlazor.Services;
+namespace Octopus.Blazor.Services;
 
 /// <summary>
 /// A custom property source that retrieves properties from a user-defined function.

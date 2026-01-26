@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Base class for toolbar items

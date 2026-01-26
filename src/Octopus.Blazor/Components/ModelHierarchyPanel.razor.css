@@ -4,10 +4,10 @@
     top: 16px;
     width: 320px;
     max-height: calc(100% - 100px);
-    background: var(--xbim-bg-primary);
+    background: var(--octopus-bg-primary);
     border-radius: 8px;
-    box-shadow: var(--xbim-shadow-lg);
-    border: 1px solid var(--xbim-border-primary);
+    box-shadow: var(--octopus-shadow-lg);
+    border: 1px solid var(--octopus-border-primary);
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -45,7 +45,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--xbim-border-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
     flex-shrink: 0;
 }
 
@@ -53,7 +53,7 @@
     margin: 0;
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -67,7 +67,7 @@
 .btn-header-action {
     background: transparent;
     border: none;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -75,8 +75,8 @@
 }
 
 .btn-header-action:hover:not(:disabled) {
-    background: var(--xbim-bg-hover);
-    color: var(--xbim-text-primary);
+    background: var(--octopus-bg-hover);
+    color: var(--octopus-text-primary);
 }
 
 .btn-header-action:disabled {
@@ -87,7 +87,7 @@
 .btn-close-panel {
     background: transparent;
     border: none;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -95,13 +95,13 @@
 }
 
 .btn-close-panel:hover {
-    background: var(--xbim-danger-bg);
-    color: var(--xbim-danger);
+    background: var(--octopus-danger-bg);
+    color: var(--octopus-danger);
 }
 
 .hierarchy-tabs {
     display: flex;
-    border-bottom: 1px solid var(--xbim-border-primary);
+    border-bottom: 1px solid var(--octopus-border-primary);
     flex-shrink: 0;
 }
 
@@ -111,7 +111,7 @@
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
@@ -123,13 +123,13 @@
 }
 
 .hierarchy-tab:hover:not(:disabled) {
-    color: var(--xbim-text-primary);
-    background: var(--xbim-bg-hover);
+    color: var(--octopus-text-primary);
+    background: var(--octopus-bg-hover);
 }
 
 .hierarchy-tab.active {
-    color: var(--xbim-accent-primary);
-    border-bottom-color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
+    border-bottom-color: var(--octopus-accent-primary);
 }
 
 .hierarchy-tab:disabled {
@@ -150,7 +150,7 @@
     justify-content: center;
     gap: 12px;
     padding: 32px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
 }
 
 .hierarchy-empty {
@@ -160,7 +160,7 @@
     justify-content: center;
     gap: 8px;
     padding: 32px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     text-align: center;
 }
 
@@ -186,7 +186,7 @@
 .tree-model-group-content {
     margin-left: 8px;
     padding-left: 12px;
-    border-left: 1px solid var(--xbim-border-primary);
+    border-left: 1px solid var(--octopus-border-primary);
 }
 
 .tree-model-header {
@@ -194,11 +194,11 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    background: linear-gradient(135deg, var(--xbim-accent-primary-bg) 0%, var(--xbim-bg-secondary) 100%);
+    background: linear-gradient(135deg, var(--octopus-accent-primary-bg) 0%, var(--octopus-bg-secondary) 100%);
     border-radius: 6px;
     font-weight: 600;
     font-size: 0.9rem;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     margin-bottom: 8px;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -206,17 +206,17 @@
 }
 
 .tree-model-header:hover {
-    background: linear-gradient(135deg, var(--xbim-accent-primary-bg) 0%, var(--xbim-bg-hover) 100%);
+    background: linear-gradient(135deg, var(--octopus-accent-primary-bg) 0%, var(--octopus-bg-hover) 100%);
 }
 
 .tree-model-header .tree-expand-btn {
     margin-left: -4px;
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
 }
 
 .tree-model-header .tree-node-count {
     margin-left: auto;
-    background: var(--xbim-accent-primary);
+    background: var(--octopus-accent-primary);
     color: white;
     font-size: 0.75rem;
     padding: 2px 8px;
@@ -224,7 +224,7 @@
 }
 
 .tree-model-header i.bi-file-earmark-binary {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     font-size: 1rem;
 }
 
@@ -251,7 +251,7 @@
 }
 
 .tree-node-header:hover {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
 }
 
 .tree-expand-btn {
@@ -260,7 +260,7 @@
     padding: 0;
     background: transparent;
     border: none;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -275,7 +275,7 @@
 }
 
 .tree-node-icon {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     font-size: 0.9rem;
     flex-shrink: 0;
 }
@@ -283,7 +283,7 @@
 .tree-node-name {
     flex: 1;
     font-size: 0.85rem;
-    color: var(--xbim-text-primary);
+    color: var(--octopus-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -292,16 +292,16 @@
 .tree-node-count {
     font-size: 0.75rem;
     padding: 2px 6px;
-    background: var(--xbim-bg-tertiary);
+    background: var(--octopus-bg-tertiary);
     border-radius: 10px;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
     flex-shrink: 0;
 }
 
 .tree-node-children {
     margin-left: 20px;
     padding-left: 8px;
-    border-left: 1px solid var(--xbim-border-primary);
+    border-left: 1px solid var(--octopus-border-primary);
 }
 
 .tree-leaf {
@@ -315,26 +315,26 @@
 }
 
 .tree-leaf:hover {
-    background: var(--xbim-bg-hover);
+    background: var(--octopus-bg-hover);
 }
 
 .tree-leaf.selected {
-    background: var(--xbim-accent-primary-bg);
+    background: var(--octopus-accent-primary-bg);
 }
 
 .tree-leaf.selected .tree-leaf-name {
-    color: var(--xbim-accent-primary);
+    color: var(--octopus-accent-primary);
     font-weight: 500;
 }
 
 .tree-leaf-icon {
-    color: var(--xbim-text-tertiary);
+    color: var(--octopus-text-tertiary);
     font-size: 0.8rem;
 }
 
 .tree-leaf-name {
     font-size: 0.8rem;
-    color: var(--xbim-text-secondary);
+    color: var(--octopus-text-secondary);
 }
 
 .tree-more {
@@ -343,7 +343,7 @@
     gap: 6px;
     padding: 4px 8px;
     font-size: 0.75rem;
-    color: var(--xbim-text-tertiary);
+    color: var(--octopus-text-tertiary);
     font-style: italic;
 }
 
@@ -357,10 +357,10 @@
 }
 
 .hierarchy-content::-webkit-scrollbar-thumb {
-    background: var(--xbim-scrollbar-thumb);
+    background: var(--octopus-scrollbar-thumb);
     border-radius: 3px;
 }
 
 .hierarchy-content::-webkit-scrollbar-thumb:hover {
-    background: var(--xbim-scrollbar-thumb-hover);
+    background: var(--octopus-scrollbar-thumb-hover);
 }

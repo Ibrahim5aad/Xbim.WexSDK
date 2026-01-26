@@ -1,5 +1,5 @@
-// xbimViewerInterop.ts
-// This module provides interop between Blazor and xBIM Viewer
+// octopusViewerInterop.ts
+// This module provides interop between Blazor and Octopus Viewer (using xBIM Viewer library)
 
 import type { Viewer as XbimViewer } from '@xbim/viewer';
 
@@ -29,7 +29,7 @@ const CameraType = {
 } as const;
 
 const XBIM_SCRIPT_PATH =
-    '_content/Xbim.WexBlazor/lib/xbim-viewer/index.js' as const;
+    '_content/Octopus.Blazor/lib/xbim-viewer/index.js' as const;
 
 declare global {
     interface Window {

@@ -1,8 +1,8 @@
 using Xbim.Common;
 using Xbim.Ifc4.Interfaces;
-using Xbim.WexBlazor.Models;
+using Octopus.Blazor.Models;
 
-namespace Xbim.WexBlazor.Services;
+namespace Octopus.Blazor.Services;
 
 /// <summary>
 /// Property source that reads properties from IFC models using xBIM Essentials

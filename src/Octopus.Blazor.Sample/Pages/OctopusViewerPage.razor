@@ -1,5 +1,5 @@
 @page "/"
-@page "/xbim-viewer"
+@page "/octopus-viewer"
 @using Octopus.Blazor.Components
 @using Octopus.Blazor.Components.BuiltInButtons
 @using Octopus.Blazor.Interop
@@ -10,11 +10,11 @@
 @inject IJSRuntime JSRuntime
 @inject ThemeService ThemeService
 
-<PageTitle>Xbim Viewer</PageTitle>
+<PageTitle>Octopus Viewer</PageTitle>
 
 
-<XbimViewerComponent @ref="_xbimViewer"
-                         Id="xbimViewer"
+<OctopusViewer @ref="_viewer"
+                         Id="octopusViewer"
                          Width="100%"
                          Height="600"
                          BackgroundColor="@ThemeService.CurrentBackgroundColor"
@@ -28,7 +28,7 @@
                          DemoModels="@_demoModels"
                          OnError="HandleLoaderError" />
 
-        @if (_xbimViewer != null)
+        @if (_viewer != null)
         {
             <ModelManagerPanel IsVisible="@_showModelManager"
                                OnLoadModel="ShowFileLoader" />
@@ -47,10 +47,10 @@
             </ViewerSidebar>
         }
 
-</XbimViewerComponent>
+</OctopusViewer>
 
 @code {
-    private XbimViewerComponent? _xbimViewer;
+    private OctopusViewer? _viewer;
     private bool _showFileLoader = true;
     private bool _showModelManager = true;
     private bool _showPropertiesPanel = false;
@@ -111,9 +111,9 @@
     {
         await ThemeService.ApplyAsync(JSRuntime);
         
-        if (_xbimViewer != null)
+        if (_viewer != null)
         {
-            await ThemeService.ApplyToViewerAsync(_xbimViewer, _gridActive ? _gridPlugin : null);
+            await ThemeService.ApplyToViewerAsync(_viewer, _gridActive ? _gridPlugin : null);
         }
         
         StateHasChanged();
@@ -123,9 +123,9 @@
     {
         InitializeToolbar();
         
-        if (_xbimViewer != null)
+        if (_viewer != null)
         {
-            await ThemeService.ApplyToViewerAsync(_xbimViewer);
+            await ThemeService.ApplyToViewerAsync(_viewer);
         }
         
         var navigationCubePlugin = new NavigationCubePlugin()
@@ -134,7 +134,7 @@
             PassiveAlpha = 1,
             ActiveAlpha = 1
         };
-        await _xbimViewer!.AddPluginAsync(navigationCubePlugin);
+        await _viewer!.AddPluginAsync(navigationCubePlugin);
         
         _gridPlugin = new GridPlugin
         {
@@ -143,7 +143,7 @@
             NumberOfLines = 20,
             Color = ThemeService.CurrentGridColor
         };
-        await _xbimViewer!.AddPluginAsync(_gridPlugin);
+        await _viewer!.AddPluginAsync(_gridPlugin);
         _gridActive = true;
         
         await InvokeAsync(StateHasChanged);
@@ -151,7 +151,7 @@
     
     private void InitializeToolbar()
     {
-        if (_xbimViewer == null) return;
+        if (_viewer == null) return;
         
         _themeButton = new ToolbarButton
         {
@@ -162,17 +162,17 @@
         
         _toolbarItems = new List<ToolbarItemBase>
         {
-            ViewerBuiltInButtons.CreatePerspectiveToggle(_xbimViewer, startWithPerspective: true),
-            ViewerBuiltInButtons.CreateZoomFitButton(_xbimViewer),
-            ViewerBuiltInButtons.CreateResetViewButton(_xbimViewer),
-            ViewerBuiltInButtons.CreateViewsDropdown(_xbimViewer),
-            ViewerBuiltInButtons.CreateNavigationButtons(_xbimViewer),
-            ViewerBuiltInButtons.CreateXRayToggle(_xbimViewer),
-            ViewerBuiltInButtons.CreateHideToggle(_xbimViewer),
-            ViewerBuiltInButtons.CreateIsolateToggle(_xbimViewer),
-            ViewerBuiltInButtons.CreateClearSelectionButton(_xbimViewer),
-            ViewerBuiltInButtons.CreateSectionBoxButtons(_xbimViewer, () => _sectionBoxPlugin, "Box", StateHasChanged),
-            ViewerBuiltInButtons.CreateClippingPlaneButtons(_xbimViewer, () => _clippingPlanePlugin, "Plane", StateHasChanged),
+            ViewerBuiltInButtons.CreatePerspectiveToggle(_viewer, startWithPerspective: true),
+            ViewerBuiltInButtons.CreateZoomFitButton(_viewer),
+            ViewerBuiltInButtons.CreateResetViewButton(_viewer),
+            ViewerBuiltInButtons.CreateViewsDropdown(_viewer),
+            ViewerBuiltInButtons.CreateNavigationButtons(_viewer),
+            ViewerBuiltInButtons.CreateXRayToggle(_viewer),
+            ViewerBuiltInButtons.CreateHideToggle(_viewer),
+            ViewerBuiltInButtons.CreateIsolateToggle(_viewer),
+            ViewerBuiltInButtons.CreateClearSelectionButton(_viewer),
+            ViewerBuiltInButtons.CreateSectionBoxButtons(_viewer, () => _sectionBoxPlugin, "Box", StateHasChanged),
+            ViewerBuiltInButtons.CreateClippingPlaneButtons(_viewer, () => _clippingPlanePlugin, "Plane", StateHasChanged),
             _themeButton
         };
     }
@@ -195,24 +195,24 @@
         if (success)
         {
             // Initialize interactive plugins after first model load (they need geometry)
-            if (!_interactivePluginsInitialized && _xbimViewer != null)
+            if (!_interactivePluginsInitialized && _viewer != null)
             {
                 _sectionBoxPlugin = new SectionBoxPlugin
                 {
                     IsStopped = true
                 };
-                await _xbimViewer.AddPluginAsync(_sectionBoxPlugin);
+                await _viewer.AddPluginAsync(_sectionBoxPlugin);
                 
                 _clippingPlanePlugin = new ClippingPlanePlugin
                 {
                     IsStopped = true
                 };
-                await _xbimViewer.AddPluginAsync(_clippingPlanePlugin);
+                await _viewer.AddPluginAsync(_clippingPlanePlugin);
                 
                 _interactivePluginsInitialized = true;
             }
             
-            await _xbimViewer.ZoomFitAsync();
+            await _viewer.ZoomFitAsync();
         }
         await InvokeAsync(StateHasChanged);
     }
@@ -230,9 +230,9 @@
     
     private async Task Reset()
     {
-        if (_xbimViewer != null)
+        if (_viewer != null)
         {
-            await _xbimViewer.ResetAsync();
+            await _viewer.ResetAsync();
         }
     }
     

@@ -1,4 +1,4 @@
-namespace Xbim.WexBlazor.Models;
+namespace Octopus.Blazor.Models;
 
 /// <summary>
 /// Defines the position of the toolbar relative to the viewer
