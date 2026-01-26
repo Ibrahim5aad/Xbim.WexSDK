@@ -198,6 +198,7 @@ app.MapFileEndpoints();
 app.MapUsageEndpoints();
 app.MapModelEndpoints();
 app.MapModelVersionEndpoints();
+app.MapPropertiesEndpoints();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
    .WithName("HealthCheck")
