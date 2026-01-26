@@ -58,3 +58,36 @@ public record UpdateMembershipRequest
     public WorkspaceRole? WorkspaceRole { get; init; }
     public ProjectRole? ProjectRole { get; init; }
 }
+
+/// <summary>
+/// Request to update a workspace member's role.
+/// </summary>
+public record UpdateWorkspaceMemberRequest
+{
+    public WorkspaceRole Role { get; init; }
+}
+
+/// <summary>
+/// Represents a workspace invitation.
+/// </summary>
+public record WorkspaceInviteDto
+{
+    public Guid Id { get; init; }
+    public Guid WorkspaceId { get; init; }
+    public string Email { get; init; } = string.Empty;
+    public WorkspaceRole Role { get; init; }
+    public string Token { get; init; } = string.Empty;
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset ExpiresAt { get; init; }
+    public bool IsAccepted { get; init; }
+    public DateTimeOffset? AcceptedAt { get; init; }
+}
+
+/// <summary>
+/// Request to create a workspace invitation.
+/// </summary>
+public record CreateWorkspaceInviteRequest
+{
+    public string Email { get; init; } = string.Empty;
+    public WorkspaceRole Role { get; init; } = WorkspaceRole.Member;
+}

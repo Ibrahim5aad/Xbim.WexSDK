@@ -154,6 +154,7 @@ app.MapDefaultEndpoints();
 
 // Map API endpoints
 app.MapWorkspaceEndpoints();
+app.MapWorkspaceMembershipEndpoints();
 app.MapProjectEndpoints();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
