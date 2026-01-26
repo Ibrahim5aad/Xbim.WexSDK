@@ -1200,4 +1200,343 @@ public class FileEndpointsTests : IDisposable
     }
 
     #endregion
+
+    #region Delete File (Soft Delete) Tests
+
+    [Fact]
+    public async Task DeleteFile_ReturnsOk_WhenSuccessful()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        var uploadedFile = await UploadFileAsync(project.Id, "test-model.ifc", fileContent);
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var deletedFile = await response.Content.ReadFromJsonAsync<FileDto>();
+        Assert.NotNull(deletedFile);
+        Assert.True(deletedFile.IsDeleted);
+        Assert.NotNull(deletedFile.DeletedAt);
+        Assert.Equal(uploadedFile.Id, deletedFile.Id);
+        Assert.Equal("test-model.ifc", deletedFile.Name);
+    }
+
+    [Fact]
+    public async Task DeleteFile_HidesFileFromList()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        var uploadedFile = await UploadFileAsync(project.Id, "to-be-deleted.ifc", fileContent);
+
+        // Verify file is in the list before deletion
+        var beforeResponse = await _client.GetAsync($"/api/v1/projects/{project.Id}/files");
+        var beforeResult = await beforeResponse.Content.ReadFromJsonAsync<PagedList<FileDto>>();
+        Assert.Single(beforeResult!.Items);
+
+        // Act
+        var deleteResponse = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        // Assert - file should be hidden from list
+        var afterResponse = await _client.GetAsync($"/api/v1/projects/{project.Id}/files");
+        var afterResult = await afterResponse.Content.ReadFromJsonAsync<PagedList<FileDto>>();
+        Assert.Empty(afterResult!.Items);
+        Assert.Equal(0, afterResult.TotalCount);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ExcludesFromUsageAggregation()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05 };
+        var uploadedFile = await UploadFileAsync(project.Id, "usage-test.ifc", fileContent);
+
+        // Verify usage before deletion
+        var beforeUsageResponse = await _client.GetAsync($"/api/v1/projects/{project.Id}/usage");
+        var beforeUsage = await beforeUsageResponse.Content.ReadFromJsonAsync<ProjectUsageDto>();
+        Assert.Equal(fileContent.Length, beforeUsage!.TotalBytes);
+
+        // Act
+        var deleteResponse = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        // Assert - usage should be 0 after deletion
+        var afterUsageResponse = await _client.GetAsync($"/api/v1/projects/{project.Id}/usage");
+        var afterUsage = await afterUsageResponse.Content.ReadFromJsonAsync<ProjectUsageDto>();
+        Assert.Equal(0, afterUsage!.TotalBytes);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ExcludesFromWorkspaceUsageAggregation()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+        var uploadedFile = await UploadFileAsync(project.Id, "workspace-usage-test.ifc", fileContent);
+
+        // Verify workspace usage before deletion
+        var beforeUsageResponse = await _client.GetAsync($"/api/v1/workspaces/{workspace.Id}/usage");
+        var beforeUsage = await beforeUsageResponse.Content.ReadFromJsonAsync<WorkspaceUsageDto>();
+        Assert.Equal(fileContent.Length, beforeUsage!.TotalBytes);
+
+        // Act
+        var deleteResponse = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        // Assert - workspace usage should be 0 after deletion
+        var afterUsageResponse = await _client.GetAsync($"/api/v1/workspaces/{workspace.Id}/usage");
+        var afterUsage = await afterUsageResponse.Content.ReadFromJsonAsync<WorkspaceUsageDto>();
+        Assert.Equal(0, afterUsage!.TotalBytes);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ReturnsNotFound_WhenFileDoesNotExist()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var nonExistentFileId = Guid.NewGuid();
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{nonExistentFileId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ReturnsNotFound_WhenUserHasNoAccess()
+    {
+        // Arrange
+        Guid fileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            // Create workspace/project/file without any user membership
+            var workspace = new Workspace
+            {
+                Id = Guid.NewGuid(),
+                Name = "No Access Workspace",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Workspaces.Add(workspace);
+
+            var project = new Project
+            {
+                Id = Guid.NewGuid(),
+                WorkspaceId = workspace.Id,
+                Name = "No Access Project",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Projects.Add(project);
+
+            var file = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "protected-file.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 500,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = $"protected/{Guid.NewGuid():N}",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.Files.Add(file);
+            fileId = file.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{fileId}");
+
+        // Assert - Returns 404 to avoid exposing file existence
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ReturnsBadRequest_WhenFileAlreadyDeleted()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        Guid deletedFileId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+            var alreadyDeletedFile = new FileEntity
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                Name = "already-deleted.ifc",
+                ContentType = "application/octet-stream",
+                SizeBytes = 100,
+                Kind = DomainFileKind.Source,
+                Category = DomainFileCategory.Ifc,
+                StorageProvider = "InMemory",
+                StorageKey = $"deleted/{Guid.NewGuid():N}",
+                IsDeleted = true,
+                DeletedAt = DateTimeOffset.UtcNow.AddHours(-1),
+                CreatedAt = DateTimeOffset.UtcNow.AddHours(-2)
+            };
+            dbContext.Files.Add(alreadyDeletedFile);
+            deletedFileId = alreadyDeletedFile.Id;
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{deletedFileId}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteFile_SetsCorrectDeletedAtTimestamp()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01 };
+        var uploadedFile = await UploadFileAsync(project.Id, "timestamp-test.ifc", fileContent);
+
+        var beforeDelete = DateTimeOffset.UtcNow;
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+
+        var afterDelete = DateTimeOffset.UtcNow;
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var deletedFile = await response.Content.ReadFromJsonAsync<FileDto>();
+        Assert.NotNull(deletedFile);
+        Assert.NotNull(deletedFile.DeletedAt);
+        Assert.True(deletedFile.DeletedAt >= beforeDelete);
+        Assert.True(deletedFile.DeletedAt <= afterDelete);
+    }
+
+    [Fact]
+    public async Task DeleteFile_PreservesFileMetadata()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03 };
+        var uploadedFile = await UploadFileAsync(project.Id, "preserve-metadata.ifc", fileContent);
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var deletedFile = await response.Content.ReadFromJsonAsync<FileDto>();
+        Assert.NotNull(deletedFile);
+        Assert.Equal(uploadedFile.Id, deletedFile.Id);
+        Assert.Equal(uploadedFile.ProjectId, deletedFile.ProjectId);
+        Assert.Equal(uploadedFile.Name, deletedFile.Name);
+        Assert.Equal(uploadedFile.SizeBytes, deletedFile.SizeBytes);
+        Assert.Equal(uploadedFile.Kind, deletedFile.Kind);
+        Assert.Equal(uploadedFile.Category, deletedFile.Category);
+        Assert.NotEmpty(deletedFile.StorageKey);
+    }
+
+    [Fact]
+    public async Task DeleteFile_StillAccessibleByDirectId_AfterDeletion()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01 };
+        var uploadedFile = await UploadFileAsync(project.Id, "still-accessible.ifc", fileContent);
+
+        // Delete the file
+        var deleteResponse = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        // Act - try to get the file by direct ID
+        var getResponse = await _client.GetAsync($"/api/v1/files/{uploadedFile.Id}");
+
+        // Assert - file should still be accessible by direct ID (just marked as deleted)
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var file = await getResponse.Content.ReadFromJsonAsync<FileDto>();
+        Assert.NotNull(file);
+        Assert.True(file.IsDeleted);
+    }
+
+    [Fact]
+    public async Task DeleteFile_ContentNotDownloadable_AfterDeletion()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var fileContent = new byte[] { 0x01, 0x02, 0x03 };
+        var uploadedFile = await UploadFileAsync(project.Id, "no-download.ifc", fileContent);
+
+        // Delete the file
+        var deleteResponse = await _client.DeleteAsync($"/api/v1/files/{uploadedFile.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        // Act - try to download the file content
+        var downloadResponse = await _client.GetAsync($"/api/v1/files/{uploadedFile.Id}/content");
+
+        // Assert - content should not be downloadable
+        Assert.Equal(HttpStatusCode.NotFound, downloadResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteFile_OnlyDeletesSpecifiedFile()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        var file1 = await UploadFileAsync(project.Id, "file1.ifc", new byte[] { 0x01 });
+        var file2 = await UploadFileAsync(project.Id, "file2.ifc", new byte[] { 0x02 });
+        var file3 = await UploadFileAsync(project.Id, "file3.ifc", new byte[] { 0x03 });
+
+        // Act - delete only file2
+        var response = await _client.DeleteAsync($"/api/v1/files/{file2.Id}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Assert - only file2 should be deleted, file1 and file3 should remain
+        var listResponse = await _client.GetAsync($"/api/v1/projects/{project.Id}/files");
+        var files = await listResponse.Content.ReadFromJsonAsync<PagedList<FileDto>>();
+
+        Assert.NotNull(files);
+        Assert.Equal(2, files.Items.Count);
+        Assert.Contains(files.Items, f => f.Id == file1.Id);
+        Assert.Contains(files.Items, f => f.Id == file3.Id);
+        Assert.DoesNotContain(files.Items, f => f.Id == file2.Id);
+    }
+
+    #endregion
 }

@@ -42,6 +42,10 @@ public static class FileEndpoints
             .WithName("GetFileContent")
             .WithOpenApi();
 
+        filesGroup.MapDelete("/{fileId:guid}", DeleteFile)
+            .WithName("DeleteFile")
+            .WithOpenApi();
+
         return app;
     }
 
@@ -163,6 +167,71 @@ public static class FileEndpoints
             contentType: contentType,
             fileDownloadName: file.Name,
             enableRangeProcessing: true);
+    }
+
+    /// <summary>
+    /// Soft deletes a file by its ID.
+    /// Requires at least Editor role in the project that contains the file.
+    /// Sets IsDeleted to true and records the deletion timestamp.
+    /// </summary>
+    private static async Task<IResult> DeleteFile(
+        Guid fileId,
+        IUserContext userContext,
+        IAuthorizationService authZ,
+        OctopusDbContext dbContext,
+        CancellationToken cancellationToken = default)
+    {
+        if (!userContext.IsAuthenticated)
+        {
+            return Results.Unauthorized();
+        }
+
+        // Find the file
+        var file = await dbContext.Files
+            .FirstOrDefaultAsync(f => f.Id == fileId, cancellationToken);
+
+        if (file == null)
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File not found." });
+        }
+
+        // Check project access - returns 404 if no access to avoid exposing file existence
+        if (!await authZ.CanAccessProjectAsync(file.ProjectId, ProjectRole.Editor, cancellationToken))
+        {
+            return Results.NotFound(new { error = "Not Found", message = "File not found." });
+        }
+
+        // Check if file is already deleted
+        if (file.IsDeleted)
+        {
+            return Results.BadRequest(new { error = "Bad Request", message = "File is already deleted." });
+        }
+
+        // Soft delete the file
+        file.IsDeleted = true;
+        file.DeletedAt = DateTimeOffset.UtcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Map to DTO
+        var fileDto = new FileDto
+        {
+            Id = file.Id,
+            ProjectId = file.ProjectId,
+            Name = file.Name,
+            ContentType = file.ContentType,
+            SizeBytes = file.SizeBytes,
+            Checksum = file.Checksum,
+            Kind = (FileKind)(int)file.Kind,
+            Category = (FileCategory)(int)file.Category,
+            StorageProvider = file.StorageProvider,
+            StorageKey = file.StorageKey,
+            IsDeleted = file.IsDeleted,
+            CreatedAt = file.CreatedAt,
+            DeletedAt = file.DeletedAt
+        };
+
+        return Results.Ok(fileDto);
     }
 
     /// <summary>
