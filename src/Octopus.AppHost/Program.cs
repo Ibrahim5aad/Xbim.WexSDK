@@ -1,6 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Add the Octopus Server API with external HTTP endpoints
+// Add the Octopus API with external HTTP endpoints
 var server = builder.AddProject<Projects.Octopus_Server_App>("octopus-server")
     .WithExternalHttpEndpoints();
 

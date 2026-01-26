@@ -84,7 +84,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "Octopus Server API",
+        Title = "Octopus API",
         Version = "v1",
         Description = "BIM backend API for the Octopus platform"
     });
@@ -174,7 +174,7 @@ app.UseExceptionHandler(exceptionHandlerApp =>
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Octopus Server API v1");
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Octopus API v1");
     options.RoutePrefix = "swagger";
 });
 

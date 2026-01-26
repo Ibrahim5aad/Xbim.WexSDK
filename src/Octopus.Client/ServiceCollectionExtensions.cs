@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     /// Adds the Octopus API client to the service collection.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="baseUrl">The base URL of the Octopus Server API.</param>
+    /// <param name="baseUrl">The base URL of the Octopus API.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddOctopusClient(
         this IServiceCollection services,
@@ -75,7 +75,7 @@ public static class ServiceCollectionExtensions
     /// Adds the Octopus API client with a token provider for authentication.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="baseUrl">The base URL of the Octopus Server API.</param>
+    /// <param name="baseUrl">The base URL of the Octopus API.</param>
     /// <param name="tokenProvider">The token provider for authentication.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddOctopusClient(
@@ -94,7 +94,7 @@ public static class ServiceCollectionExtensions
     /// Adds the Octopus API client with a token factory function for authentication.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="baseUrl">The base URL of the Octopus Server API.</param>
+    /// <param name="baseUrl">The base URL of the Octopus API.</param>
     /// <param name="tokenFactory">A function that provides authentication tokens.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddOctopusClient(
@@ -113,7 +113,7 @@ public static class ServiceCollectionExtensions
     /// Adds the Octopus API client with a token factory function that accepts a cancellation token.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="baseUrl">The base URL of the Octopus Server API.</param>
+    /// <param name="baseUrl">The base URL of the Octopus API.</param>
     /// <param name="tokenFactory">A function that provides authentication tokens.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddOctopusClient(

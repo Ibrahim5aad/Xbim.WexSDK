@@ -25,7 +25,7 @@ public class OctopusClientFactory : IOctopusClientFactory
     /// Creates a new OctopusClientFactory with the specified HttpClient and base URL.
     /// </summary>
     /// <param name="httpClient">The HttpClient to use for API requests.</param>
-    /// <param name="baseUrl">The base URL of the Octopus Server API.</param>
+    /// <param name="baseUrl">The base URL of the Octopus API.</param>
     public OctopusClientFactory(HttpClient httpClient, string baseUrl)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -45,7 +45,7 @@ public class OctopusClientFactory : IOctopusClientFactory
 public class OctopusClientOptions
 {
     /// <summary>
-    /// The base URL of the Octopus Server API.
+    /// The base URL of the Octopus API.
     /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
 
