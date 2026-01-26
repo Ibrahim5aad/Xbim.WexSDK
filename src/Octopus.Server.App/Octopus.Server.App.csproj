@@ -16,6 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <!-- xBIM packages for IFC to WexBIM conversion -->
     <PackageReference Include="Xbim.Essentials" Version="6.0.563" />
     <PackageReference Include="Xbim.Geometry.Engine.Interop" Version="6.3.873-netcore" />

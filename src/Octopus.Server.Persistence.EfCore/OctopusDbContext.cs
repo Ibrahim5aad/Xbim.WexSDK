@@ -25,6 +25,13 @@ public class OctopusDbContext : DbContext
     public DbSet<Model> Models => Set<Model>();
     public DbSet<ModelVersion> ModelVersions => Set<ModelVersion>();
 
+    // IFC Properties
+    public DbSet<IfcElement> IfcElements => Set<IfcElement>();
+    public DbSet<IfcPropertySet> IfcPropertySets => Set<IfcPropertySet>();
+    public DbSet<IfcProperty> IfcProperties => Set<IfcProperty>();
+    public DbSet<IfcQuantitySet> IfcQuantitySets => Set<IfcQuantitySet>();
+    public DbSet<IfcQuantity> IfcQuantities => Set<IfcQuantity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

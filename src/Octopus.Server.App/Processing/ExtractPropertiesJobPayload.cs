@@ -9,4 +9,11 @@ public record ExtractPropertiesJobPayload
     /// The model version to extract properties from.
     /// </summary>
     public required Guid ModelVersionId { get; init; }
+
+    /// <summary>
+    /// Whether to persist properties to the Octopus database for querying.
+    /// When true, properties are stored in database tables (IfcElements, IfcPropertySets, etc.).
+    /// Default is false (only creates SQLite artifact file).
+    /// </summary>
+    public bool PersistToDatabase { get; init; } = false;
 }
