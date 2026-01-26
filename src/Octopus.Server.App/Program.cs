@@ -175,6 +175,7 @@ app.MapWorkspaceEndpoints();
 app.MapWorkspaceMembershipEndpoints();
 app.MapProjectEndpoints();
 app.MapProjectMembershipEndpoints();
+app.MapFileUploadEndpoints();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
    .WithName("HealthCheck")

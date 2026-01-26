@@ -104,3 +104,35 @@ public record CommitUploadRequest
 {
     public string? Checksum { get; init; }
 }
+
+/// <summary>
+/// Response returned when reserving an upload session.
+/// </summary>
+public record ReserveUploadResponse
+{
+    /// <summary>
+    /// The created upload session.
+    /// </summary>
+    public UploadSessionDto Session { get; init; } = null!;
+
+    /// <summary>
+    /// Constraints for the upload.
+    /// </summary>
+    public UploadConstraints Constraints { get; init; } = null!;
+}
+
+/// <summary>
+/// Upload constraints returned with a reserved session.
+/// </summary>
+public record UploadConstraints
+{
+    /// <summary>
+    /// Maximum allowed file size in bytes.
+    /// </summary>
+    public long MaxFileSizeBytes { get; init; }
+
+    /// <summary>
+    /// When the upload session expires.
+    /// </summary>
+    public DateTimeOffset SessionExpiresAt { get; init; }
+}
