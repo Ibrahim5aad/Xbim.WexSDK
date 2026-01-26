@@ -1,26 +1,34 @@
-using Octopus.Server.Domain.Enums;
-
 namespace Octopus.Server.Abstractions.Processing;
 
 /// <summary>
-/// Represents a job to be processed.
+/// Envelope that wraps a job payload for queue transport.
 /// </summary>
-public record ProcessingJobRequest
+public record JobEnvelope
 {
     /// <summary>
-    /// The ID of the processing job entity.
+    /// Unique identifier for the job, used for idempotency.
     /// </summary>
-    public Guid JobId { get; init; }
+    public required string JobId { get; init; }
 
     /// <summary>
-    /// The model version ID this job is for.
+    /// The type of job (used to dispatch to the correct handler).
     /// </summary>
-    public Guid ModelVersionId { get; init; }
+    public required string Type { get; init; }
 
     /// <summary>
-    /// The type of processing job.
+    /// JSON-serialized payload for the job.
     /// </summary>
-    public ProcessingJobType JobType { get; init; }
+    public required string PayloadJson { get; init; }
+
+    /// <summary>
+    /// When the job was created/enqueued.
+    /// </summary>
+    public required DateTimeOffset CreatedAt { get; init; }
+
+    /// <summary>
+    /// Schema version for the payload (for future compatibility).
+    /// </summary>
+    public int Version { get; init; } = 1;
 }
 
 /// <summary>
@@ -29,16 +37,16 @@ public record ProcessingJobRequest
 public interface IProcessingQueue
 {
     /// <summary>
-    /// Enqueues a job for processing.
+    /// Enqueues a job envelope for processing.
     /// </summary>
-    /// <param name="job">The job to enqueue.</param>
+    /// <param name="envelope">The job envelope to enqueue.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    ValueTask EnqueueAsync(ProcessingJobRequest job, CancellationToken cancellationToken = default);
+    ValueTask EnqueueAsync(JobEnvelope envelope, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Dequeues the next job for processing.
+    /// Dequeues the next job envelope for processing.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The next job, or null if queue is empty and closed.</returns>
-    ValueTask<ProcessingJobRequest?> DequeueAsync(CancellationToken cancellationToken = default);
+    /// <returns>The next job envelope, or null if queue is empty and closed.</returns>
+    ValueTask<JobEnvelope?> DequeueAsync(CancellationToken cancellationToken = default);
 }

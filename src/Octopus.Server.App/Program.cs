@@ -5,6 +5,7 @@ using Octopus.Server.App.Auth;
 using Octopus.Server.App.Endpoints;
 using Octopus.Server.Persistence.EfCore;
 using Octopus.Server.Persistence.EfCore.Extensions;
+using Octopus.Server.Processing;
 using Octopus.Server.Storage.AzureBlob;
 using Octopus.Server.Storage.LocalDisk;
 
@@ -34,6 +35,13 @@ else
     // Default to LocalDisk for development
     var basePath = builder.Configuration.GetValue<string>("Storage:LocalDisk:BasePath") ?? "octopus-storage";
     builder.Services.AddLocalDiskStorage(basePath);
+}
+
+// Add processing queue and worker (in-memory Channel backend)
+// Skip in Testing environment - tests configure their own mocks
+if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddInMemoryProcessing();
 }
 
 // Configure authentication mode based on configuration
