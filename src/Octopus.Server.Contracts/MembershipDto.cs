@@ -91,3 +91,20 @@ public record CreateWorkspaceInviteRequest
     public string Email { get; init; } = string.Empty;
     public WorkspaceRole Role { get; init; } = WorkspaceRole.Member;
 }
+
+/// <summary>
+/// Request to add a member to a project.
+/// </summary>
+public record AddProjectMemberRequest
+{
+    public Guid UserId { get; init; }
+    public ProjectRole Role { get; init; } = ProjectRole.Viewer;
+}
+
+/// <summary>
+/// Request to update a project member's role.
+/// </summary>
+public record UpdateProjectMemberRequest
+{
+    public ProjectRole Role { get; init; }
+}
