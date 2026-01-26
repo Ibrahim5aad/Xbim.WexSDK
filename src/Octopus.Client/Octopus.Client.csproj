@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Octopus.Client</RootNamespace>
+    <AssemblyName>Octopus.Client</AssemblyName>
+    <PackageId>Octopus.Client</PackageId>
+    <Description>Generated API client for Octopus Server</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSwag.MSBuild" Version="14.2.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <!-- Generate client code from swagger.json during build -->
+  <Target Name="NSwag" BeforeTargets="CoreCompile" Inputs="$(MSBuildProjectDirectory)\swagger.json" Outputs="$(MSBuildProjectDirectory)\Generated\OctopusClient.cs">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" Command="$(NSwagExe) run nswag.json" />
+  </Target>
+
+  <ItemGroup>
+    <None Include="swagger.json" CopyToOutputDirectory="Never" />
+    <None Include="nswag.json" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+</Project>

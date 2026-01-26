@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Server.Processing",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Server.Processing.Tests", "tests\Octopus.Server.Processing.Tests\Octopus.Server.Processing.Tests.csproj", "{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Client", "src\Octopus.Client\Octopus.Client.csproj", "{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -243,6 +245,18 @@ Global
 		{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C}.Release|x64.Build.0 = Release|Any CPU
 		{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C}.Release|x86.ActiveCfg = Release|Any CPU
 		{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C}.Release|x86.Build.0 = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|x64.Build.0 = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Debug|x86.Build.0 = Debug|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|x64.ActiveCfg = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|x64.Build.0 = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|x86.ActiveCfg = Release|Any CPU
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -264,5 +278,6 @@ Global
 		{FD34F3CC-E5F7-4699-B766-4BE6B0E2CC7A} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{5AFF661E-7953-4833-80D3-96F7C20613DA} = {5D13C73B-7C64-4902-B548-AF5F955B0680}
 		{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E} = {5D13C73B-7C64-4902-B548-AF5F955B0680}
 	EndGlobalSection
 EndGlobal
