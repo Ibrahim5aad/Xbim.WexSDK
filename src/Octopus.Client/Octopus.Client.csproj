@@ -25,6 +25,29 @@
     <Exec WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" Command="$(NSwagExe) run nswag.json" />
   </Target>
 
+  <!-- Manual target to regenerate client code: dotnet msbuild -t:RegenerateClient -->
+  <Target Name="RegenerateClient">
+    <Message Importance="High" Text="Regenerating OctopusClient from swagger.json..." />
+    <Delete Files="$(MSBuildProjectDirectory)\Generated\OctopusClient.cs" />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" Command="$(NSwagExe) run nswag.json" />
+    <Message Importance="High" Text="Client regenerated: Generated/OctopusClient.cs" />
+  </Target>
+
+  <!-- Fetch swagger.json from running server: dotnet msbuild -t:FetchSwagger -p:ServerUrl=http://localhost:5000 -->
+  <Target Name="FetchSwagger">
+    <PropertyGroup>
+      <ServerUrl Condition="'$(ServerUrl)' == ''">http://localhost:5000</ServerUrl>
+    </PropertyGroup>
+    <Message Importance="High" Text="Fetching swagger.json from $(ServerUrl)/swagger/v1/swagger.json..." />
+    <Exec Command="curl -s -o swagger.json $(ServerUrl)/swagger/v1/swagger.json" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Message Importance="High" Text="swagger.json updated" />
+  </Target>
+
+  <!-- Combined: fetch + regenerate: dotnet msbuild -t:UpdateClient -p:ServerUrl=http://localhost:5000 -->
+  <Target Name="UpdateClient" DependsOnTargets="FetchSwagger;RegenerateClient">
+    <Message Importance="High" Text="Client updated from $(ServerUrl)" />
+  </Target>
+
   <ItemGroup>
     <None Include="swagger.json" CopyToOutputDirectory="Never" />
     <None Include="nswag.json" CopyToOutputDirectory="Never" />

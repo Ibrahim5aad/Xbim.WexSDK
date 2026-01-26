@@ -3,7 +3,8 @@
 **/wwwroot/js/*.js.map
 
 ## Documentation - local only, not tracked
-docs/
+docs/*
+!docs/claude-progress.txt
 
 ## Node.js
 node_modules/
@@ -96,6 +97,7 @@ desktop.ini
 .claude/
 .runlogs/
 *.ps1
+!scripts/*.ps1
 
 ## Windows artifacts
 nul
