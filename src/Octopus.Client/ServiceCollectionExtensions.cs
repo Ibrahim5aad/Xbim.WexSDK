@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Http.Resilience;
 
 namespace Octopus.Client;
 
@@ -47,6 +48,7 @@ public static class ServiceCollectionExtensions
         var httpClientBuilder = services.AddHttpClient("OctopusApiClient", client =>
         {
             client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromMinutes(2); // Allow longer operations
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
         .AddHttpMessageHandler(() =>
@@ -54,6 +56,14 @@ public static class ServiceCollectionExtensions
             // Use the token provider if configured, otherwise use a no-op provider
             var provider = tokenProvider ?? new StaticTokenProvider(null);
             return new AuthorizationDelegatingHandler(provider);
+        })
+        // Configure resilience with longer timeouts for API operations
+        .AddStandardResilienceHandler(options =>
+        {
+            // Increase attempt timeout for slower database operations during development
+            options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(1);
+            // Increase total request timeout
+            options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
         });
 
         // Register IOctopusApiClient with a factory that provides the baseUrl parameter
