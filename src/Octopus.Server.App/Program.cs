@@ -5,6 +5,7 @@ using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
 using Octopus.Server.App.Auth;
 using Octopus.Server.App.Endpoints;
+using Octopus.Server.App.Middleware;
 using Octopus.Server.App.Processing;
 using Octopus.Server.Persistence.EfCore;
 using Octopus.Server.Persistence.EfCore.Extensions;
@@ -174,6 +175,9 @@ app.UseExceptionHandler(exceptionHandlerApp =>
         var exceptionHandlerFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         var exception = exceptionHandlerFeature?.Error;
 
+        // Get correlation ID from context (will be set by CorrelationIdMiddleware)
+        var correlationId = context.GetCorrelationId();
+
         if (exception is Octopus.Server.App.Auth.ForbiddenAccessException)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -181,7 +185,8 @@ app.UseExceptionHandler(exceptionHandlerApp =>
             await context.Response.WriteAsJsonAsync(new
             {
                 error = "Forbidden",
-                message = exception.Message
+                message = exception.Message,
+                correlationId
             });
         }
         else if (exception is UnauthorizedAccessException)
@@ -191,7 +196,8 @@ app.UseExceptionHandler(exceptionHandlerApp =>
             await context.Response.WriteAsJsonAsync(new
             {
                 error = "Unauthorized",
-                message = exception.Message
+                message = exception.Message,
+                correlationId
             });
         }
         else
@@ -201,11 +207,15 @@ app.UseExceptionHandler(exceptionHandlerApp =>
             await context.Response.WriteAsJsonAsync(new
             {
                 error = "Internal Server Error",
-                message = app.Environment.IsDevelopment() ? exception?.Message : "An unexpected error occurred."
+                message = app.Environment.IsDevelopment() ? exception?.Message : "An unexpected error occurred.",
+                correlationId
             });
         }
     });
 });
+
+// Correlation ID middleware (adds request correlation for logging and tracing)
+app.UseCorrelationId();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
