@@ -8,6 +8,7 @@ using Octopus.Server.Domain.Entities;
 using Octopus.Server.Persistence.EfCore;
 
 using DomainOAuthClientType = Octopus.Server.Domain.Enums.OAuthClientType;
+using DomainAuditEventType = Octopus.Server.Domain.Enums.OAuthAppAuditEventType;
 
 namespace Octopus.Server.App.Endpoints;
 
@@ -40,7 +41,22 @@ public static class OAuthEndpoints
             .WithOpenApi(operation =>
             {
                 operation.Summary = "OAuth 2.0 Token Endpoint";
-                operation.Description = "Exchanges an authorization code for access tokens.";
+                operation.Description = "Exchanges an authorization code or refresh token for access tokens. Supports grant_type=authorization_code and grant_type=refresh_token.";
+                return operation;
+            })
+            .AllowAnonymous();
+
+        // Token revocation endpoint (RFC 7009)
+        app.MapPost("/oauth/revoke", Revoke)
+            .WithName("OAuthRevoke")
+            .WithTags("OAuth")
+            .Produces(StatusCodes.Status200OK)
+            .Produces<OAuthErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<OAuthErrorResponse>(StatusCodes.Status401Unauthorized)
+            .WithOpenApi(operation =>
+            {
+                operation.Summary = "OAuth 2.0 Token Revocation Endpoint";
+                operation.Description = "Revokes an access token or refresh token (RFC 7009). The response is always 200 OK regardless of whether the token was actually revoked.";
                 return operation;
             })
             .AllowAnonymous();
@@ -217,32 +233,10 @@ public static class OAuthEndpoints
         var form = await request.ReadFormAsync(cancellationToken);
 
         var grantType = form["grant_type"].FirstOrDefault();
-        var code = form["code"].FirstOrDefault();
-        var redirectUri = form["redirect_uri"].FirstOrDefault();
         var clientId = form["client_id"].FirstOrDefault();
         var clientSecret = form["client_secret"].FirstOrDefault();
-        var codeVerifier = form["code_verifier"].FirstOrDefault();
 
-        // Validate grant_type
-        if (grantType != "authorization_code")
-        {
-            return Results.BadRequest(new OAuthErrorResponse
-            {
-                Error = OAuthErrorCodes.UnsupportedGrantType,
-                ErrorDescription = "Only 'authorization_code' grant type is supported."
-            });
-        }
-
-        // Validate required parameters
-        if (string.IsNullOrEmpty(code))
-        {
-            return Results.BadRequest(new OAuthErrorResponse
-            {
-                Error = OAuthErrorCodes.InvalidRequest,
-                ErrorDescription = "code is required."
-            });
-        }
-
+        // Validate client_id is always required
         if (string.IsNullOrEmpty(clientId))
         {
             return Results.BadRequest(new OAuthErrorResponse
@@ -252,18 +246,8 @@ public static class OAuthEndpoints
             });
         }
 
-        if (string.IsNullOrEmpty(redirectUri))
-        {
-            return Results.BadRequest(new OAuthErrorResponse
-            {
-                Error = OAuthErrorCodes.InvalidRequest,
-                ErrorDescription = "redirect_uri is required."
-            });
-        }
-
         // Look up the OAuth app
         var app = await dbContext.OAuthApps
-            .AsNoTracking()
             .FirstOrDefaultAsync(a => a.ClientId == clientId, cancellationToken);
 
         if (app == null)
@@ -306,6 +290,53 @@ public static class OAuthEndpoints
             }
         }
 
+        // Route to appropriate grant handler
+        return grantType switch
+        {
+            "authorization_code" => await HandleAuthorizationCodeGrant(request, form, app, tokenService, dbContext, cancellationToken),
+            "refresh_token" => await HandleRefreshTokenGrant(request, form, app, tokenService, dbContext, cancellationToken),
+            _ => Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.UnsupportedGrantType,
+                ErrorDescription = "Supported grant types: authorization_code, refresh_token."
+            })
+        };
+    }
+
+    /// <summary>
+    /// Handles authorization_code grant type.
+    /// </summary>
+    private static async Task<IResult> HandleAuthorizationCodeGrant(
+        HttpRequest request,
+        IFormCollection form,
+        OAuthApp app,
+        IOAuthTokenService tokenService,
+        OctopusDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var code = form["code"].FirstOrDefault();
+        var redirectUri = form["redirect_uri"].FirstOrDefault();
+        var codeVerifier = form["code_verifier"].FirstOrDefault();
+
+        // Validate required parameters
+        if (string.IsNullOrEmpty(code))
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidRequest,
+                ErrorDescription = "code is required."
+            });
+        }
+
+        if (string.IsNullOrEmpty(redirectUri))
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidRequest,
+                ErrorDescription = "redirect_uri is required."
+            });
+        }
+
         // Look up the authorization code
         var codeHash = tokenService.HashCode(code);
         var authCode = await dbContext.AuthorizationCodes
@@ -324,7 +355,6 @@ public static class OAuthEndpoints
         // Validate code hasn't been used
         if (authCode.IsUsed)
         {
-            // Potential replay attack - revoke all tokens for this code (future feature)
             return Results.BadRequest(new OAuthErrorResponse
             {
                 Error = OAuthErrorCodes.InvalidGrant,
@@ -386,7 +416,6 @@ public static class OAuthEndpoints
         // Mark code as used
         authCode.IsUsed = true;
         authCode.UsedAt = DateTimeOffset.UtcNow;
-        await dbContext.SaveChangesAsync(cancellationToken);
 
         // Get user subject
         var userSubject = authCode.User?.Subject ?? authCode.UserId.ToString();
@@ -408,7 +437,368 @@ public static class OAuthEndpoints
             Scope = authCode.Scopes
         };
 
+        // Issue refresh token if enabled
+        if (tokenService.RefreshTokensEnabled)
+        {
+            var refreshTokenValue = tokenService.GenerateRefreshToken();
+            var tokenFamilyId = Guid.NewGuid();
+
+            var refreshToken = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                TokenHash = tokenService.HashRefreshToken(refreshTokenValue),
+                OAuthAppId = app.Id,
+                UserId = authCode.UserId,
+                WorkspaceId = authCode.WorkspaceId,
+                Scopes = authCode.Scopes,
+                CreatedAt = DateTimeOffset.UtcNow,
+                ExpiresAt = tokenService.GetRefreshTokenExpiration(),
+                IsRevoked = false,
+                TokenFamilyId = tokenFamilyId,
+                IpAddress = GetClientIpAddress(request.HttpContext),
+                UserAgent = request.Headers.UserAgent.FirstOrDefault()
+            };
+
+            dbContext.RefreshTokens.Add(refreshToken);
+
+            // Audit log for token issuance
+            var auditLog = new OAuthAppAuditLog
+            {
+                Id = Guid.NewGuid(),
+                OAuthAppId = app.Id,
+                EventType = DomainAuditEventType.RefreshTokenIssued,
+                ActorUserId = authCode.UserId,
+                Timestamp = DateTimeOffset.UtcNow,
+                Details = JsonSerializer.Serialize(new
+                {
+                    TokenId = refreshToken.Id,
+                    TokenFamilyId = tokenFamilyId,
+                    Scopes = authCode.Scopes,
+                    ExpiresAt = refreshToken.ExpiresAt
+                }),
+                IpAddress = GetClientIpAddress(request.HttpContext)
+            };
+
+            dbContext.OAuthAppAuditLogs.Add(auditLog);
+
+            response = response with { RefreshToken = refreshTokenValue };
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
         return Results.Ok(response);
+    }
+
+    /// <summary>
+    /// Handles refresh_token grant type with token rotation and reuse detection.
+    /// </summary>
+    private static async Task<IResult> HandleRefreshTokenGrant(
+        HttpRequest request,
+        IFormCollection form,
+        OAuthApp app,
+        IOAuthTokenService tokenService,
+        OctopusDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        if (!tokenService.RefreshTokensEnabled)
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.UnsupportedGrantType,
+                ErrorDescription = "Refresh tokens are not enabled."
+            });
+        }
+
+        var refreshTokenValue = form["refresh_token"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(refreshTokenValue))
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidRequest,
+                ErrorDescription = "refresh_token is required."
+            });
+        }
+
+        // Look up the refresh token
+        var tokenHash = tokenService.HashRefreshToken(refreshTokenValue);
+        var existingToken = await dbContext.RefreshTokens
+            .Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.TokenHash == tokenHash && t.OAuthAppId == app.Id, cancellationToken);
+
+        if (existingToken == null)
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidGrant,
+                ErrorDescription = "Invalid refresh token."
+            });
+        }
+
+        // Check if token has been revoked - this could indicate a reuse attack
+        if (existingToken.IsRevoked)
+        {
+            // Token reuse detected! Revoke the entire token family for security
+            await RevokeTokenFamily(dbContext, existingToken.TokenFamilyId, "token_reuse_detected", cancellationToken);
+
+            // Log security event
+            var securityAuditLog = new OAuthAppAuditLog
+            {
+                Id = Guid.NewGuid(),
+                OAuthAppId = app.Id,
+                EventType = DomainAuditEventType.TokenReuseDetected,
+                ActorUserId = existingToken.UserId,
+                Timestamp = DateTimeOffset.UtcNow,
+                Details = JsonSerializer.Serialize(new
+                {
+                    TokenId = existingToken.Id,
+                    TokenFamilyId = existingToken.TokenFamilyId,
+                    OriginalRevocationReason = existingToken.RevokedReason,
+                    Message = "Attempted reuse of revoked refresh token - entire token family revoked"
+                }),
+                IpAddress = GetClientIpAddress(request.HttpContext)
+            };
+
+            dbContext.OAuthAppAuditLogs.Add(securityAuditLog);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidGrant,
+                ErrorDescription = "Refresh token has been revoked."
+            });
+        }
+
+        // Check if token has expired
+        if (existingToken.ExpiresAt < DateTimeOffset.UtcNow)
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidGrant,
+                ErrorDescription = "Refresh token has expired."
+            });
+        }
+
+        // Get user subject
+        var userSubject = existingToken.User?.Subject ?? existingToken.UserId.ToString();
+
+        // Generate new access token
+        var scopes = existingToken.Scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var accessToken = tokenService.GenerateAccessToken(
+            subject: userSubject,
+            userId: existingToken.UserId,
+            workspaceId: existingToken.WorkspaceId,
+            clientId: app.ClientId,
+            scopes: scopes);
+
+        // Token rotation: revoke old token and issue new one
+        existingToken.IsRevoked = true;
+        existingToken.RevokedAt = DateTimeOffset.UtcNow;
+        existingToken.RevokedReason = "token_rotation";
+
+        var newRefreshTokenValue = tokenService.GenerateRefreshToken();
+        var newRefreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            TokenHash = tokenService.HashRefreshToken(newRefreshTokenValue),
+            OAuthAppId = app.Id,
+            UserId = existingToken.UserId,
+            WorkspaceId = existingToken.WorkspaceId,
+            Scopes = existingToken.Scopes,
+            CreatedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = tokenService.GetRefreshTokenExpiration(),
+            IsRevoked = false,
+            ParentTokenId = existingToken.Id,
+            TokenFamilyId = existingToken.TokenFamilyId,
+            IpAddress = GetClientIpAddress(request.HttpContext),
+            UserAgent = request.Headers.UserAgent.FirstOrDefault()
+        };
+
+        existingToken.ReplacedByTokenId = newRefreshToken.Id;
+        dbContext.RefreshTokens.Add(newRefreshToken);
+
+        // Audit log for token rotation
+        var auditLog = new OAuthAppAuditLog
+        {
+            Id = Guid.NewGuid(),
+            OAuthAppId = app.Id,
+            EventType = DomainAuditEventType.RefreshTokenIssued,
+            ActorUserId = existingToken.UserId,
+            Timestamp = DateTimeOffset.UtcNow,
+            Details = JsonSerializer.Serialize(new
+            {
+                TokenId = newRefreshToken.Id,
+                TokenFamilyId = existingToken.TokenFamilyId,
+                PreviousTokenId = existingToken.Id,
+                Scopes = existingToken.Scopes,
+                ExpiresAt = newRefreshToken.ExpiresAt,
+                Reason = "token_rotation"
+            }),
+            IpAddress = GetClientIpAddress(request.HttpContext)
+        };
+
+        dbContext.OAuthAppAuditLogs.Add(auditLog);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        var response = new OAuthTokenResponse
+        {
+            AccessToken = accessToken,
+            TokenType = "Bearer",
+            ExpiresIn = tokenService.AccessTokenLifetimeSeconds,
+            RefreshToken = newRefreshTokenValue,
+            Scope = existingToken.Scopes
+        };
+
+        return Results.Ok(response);
+    }
+
+    /// <summary>
+    /// OAuth 2.0 Token Revocation Endpoint (RFC 7009)
+    /// </summary>
+    private static async Task<IResult> Revoke(
+        HttpRequest request,
+        IOAuthTokenService tokenService,
+        OctopusDbContext dbContext,
+        CancellationToken cancellationToken = default)
+    {
+        // Parse form data
+        var form = await request.ReadFormAsync(cancellationToken);
+
+        var token = form["token"].FirstOrDefault();
+        var tokenTypeHint = form["token_type_hint"].FirstOrDefault();
+        var clientId = form["client_id"].FirstOrDefault();
+        var clientSecret = form["client_secret"].FirstOrDefault();
+
+        // Validate required parameters
+        if (string.IsNullOrEmpty(token))
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidRequest,
+                ErrorDescription = "token is required."
+            });
+        }
+
+        if (string.IsNullOrEmpty(clientId))
+        {
+            return Results.BadRequest(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidRequest,
+                ErrorDescription = "client_id is required."
+            });
+        }
+
+        // Look up the OAuth app
+        var app = await dbContext.OAuthApps
+            .FirstOrDefaultAsync(a => a.ClientId == clientId, cancellationToken);
+
+        if (app == null)
+        {
+            return Results.Json(new OAuthErrorResponse
+            {
+                Error = OAuthErrorCodes.InvalidClient,
+                ErrorDescription = "Unknown client_id."
+            }, statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        // Authenticate confidential clients
+        if (app.ClientType == DomainOAuthClientType.Confidential)
+        {
+            if (string.IsNullOrEmpty(clientSecret))
+            {
+                return Results.Json(new OAuthErrorResponse
+                {
+                    Error = OAuthErrorCodes.InvalidClient,
+                    ErrorDescription = "client_secret is required for confidential clients."
+                }, statusCode: StatusCodes.Status401Unauthorized);
+            }
+
+            if (!tokenService.ValidateClientSecret(clientSecret, app.ClientSecretHash!))
+            {
+                return Results.Json(new OAuthErrorResponse
+                {
+                    Error = OAuthErrorCodes.InvalidClient,
+                    ErrorDescription = "Invalid client credentials."
+                }, statusCode: StatusCodes.Status401Unauthorized);
+            }
+        }
+
+        // Per RFC 7009, we always return 200 OK regardless of whether token was found/revoked
+        // Try to revoke as refresh token (we only store refresh tokens, not access tokens)
+        if (token.StartsWith("octr_") || tokenTypeHint == "refresh_token" || string.IsNullOrEmpty(tokenTypeHint))
+        {
+            var tokenHash = tokenService.HashRefreshToken(token);
+            var refreshToken = await dbContext.RefreshTokens
+                .FirstOrDefaultAsync(t => t.TokenHash == tokenHash && t.OAuthAppId == app.Id, cancellationToken);
+
+            if (refreshToken != null && !refreshToken.IsRevoked)
+            {
+                refreshToken.IsRevoked = true;
+                refreshToken.RevokedAt = DateTimeOffset.UtcNow;
+                refreshToken.RevokedReason = "user_revoked";
+
+                // Audit log
+                var auditLog = new OAuthAppAuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    OAuthAppId = app.Id,
+                    EventType = DomainAuditEventType.RefreshTokenRevoked,
+                    ActorUserId = refreshToken.UserId,
+                    Timestamp = DateTimeOffset.UtcNow,
+                    Details = JsonSerializer.Serialize(new
+                    {
+                        TokenId = refreshToken.Id,
+                        TokenFamilyId = refreshToken.TokenFamilyId,
+                        Reason = "user_revoked"
+                    }),
+                    IpAddress = GetClientIpAddress(request.HttpContext)
+                };
+
+                dbContext.OAuthAppAuditLogs.Add(auditLog);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        // Per RFC 7009, always return 200 OK
+        return Results.Ok();
+    }
+
+    /// <summary>
+    /// Revokes all refresh tokens in a token family (for security when reuse is detected).
+    /// </summary>
+    private static async Task RevokeTokenFamily(
+        OctopusDbContext dbContext,
+        Guid tokenFamilyId,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        var familyTokens = await dbContext.RefreshTokens
+            .Where(t => t.TokenFamilyId == tokenFamilyId && !t.IsRevoked)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var token in familyTokens)
+        {
+            token.IsRevoked = true;
+            token.RevokedAt = now;
+            token.RevokedReason = reason;
+        }
+    }
+
+    /// <summary>
+    /// Gets the client IP address from the request context.
+    /// </summary>
+    private static string? GetClientIpAddress(HttpContext context)
+    {
+        // Check for forwarded header first (for reverse proxies)
+        var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            // Take the first IP in the chain (client's IP)
+            return forwardedFor.Split(',')[0].Trim();
+        }
+
+        return context.Connection.RemoteIpAddress?.ToString();
     }
 
     private static string BuildRedirectUrl(string redirectUri, string code, string? state)

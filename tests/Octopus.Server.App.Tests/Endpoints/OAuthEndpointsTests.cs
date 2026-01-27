@@ -499,11 +499,15 @@ public class OAuthEndpointsTests : IDisposable
     [Fact]
     public async Task Token_ReturnsError_WhenGrantTypeInvalid()
     {
+        // Arrange - need a valid client_id since client is validated first
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+
         // Act
         var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["grant_type"] = "client_credentials",
-            ["client_id"] = "some_client"
+            ["client_id"] = app.ClientId
         });
         var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
 
@@ -565,5 +569,492 @@ public class OAuthEndpointsTests : IDisposable
             case 3: return base64 + "=";
             default: return base64;
         }
+    }
+
+    // ==================== Refresh Token Tests ====================
+
+    [Fact]
+    public async Task Token_ReturnsRefreshToken_WhenEnabled()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get an authorization code
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read+write&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        // Act - exchange code for token
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, tokenResponse.StatusCode);
+
+        var token = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+        Assert.NotNull(token);
+        Assert.NotEmpty(token!.AccessToken);
+        Assert.NotNull(token.RefreshToken);
+        Assert.StartsWith("octr_", token.RefreshToken); // Refresh token prefix
+    }
+
+    [Fact]
+    public async Task RefreshToken_GrantType_ReturnsNewAccessToken()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get authorization code
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read+write&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        // Exchange code for initial tokens
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+        Assert.NotNull(initialToken?.RefreshToken);
+
+        // Act - use refresh token to get new access token
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken!.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+
+        var newToken = await refreshResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+        Assert.NotNull(newToken);
+        Assert.NotEmpty(newToken!.AccessToken);
+        Assert.NotEqual(initialToken.AccessToken, newToken.AccessToken); // New access token
+        Assert.NotNull(newToken.RefreshToken);
+        Assert.NotEqual(initialToken.RefreshToken, newToken.RefreshToken); // Rotated refresh token
+    }
+
+    [Fact]
+    public async Task RefreshToken_Rotation_InvalidatesOldToken()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Use refresh token once (causes rotation)
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken!.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var firstRefreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+        Assert.Equal(HttpStatusCode.OK, firstRefreshResponse.StatusCode);
+
+        // Act - try to use the old refresh token again
+        var secondRefreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var secondRefreshResponse = await _client.PostAsync("/oauth/token", secondRefreshRequest);
+
+        // Assert - old token should be rejected (it's revoked after rotation)
+        Assert.Equal(HttpStatusCode.BadRequest, secondRefreshResponse.StatusCode);
+
+        var error = await secondRefreshResponse.Content.ReadFromJsonAsync<OAuthErrorResponse>();
+        Assert.Equal(OAuthErrorCodes.InvalidGrant, error!.Error);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ReuseDetection_RevokesEntireFamily()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Refresh once to get a new token
+        var refreshRequest1 = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken!.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var refreshResponse1 = await _client.PostAsync("/oauth/token", refreshRequest1);
+        var secondToken = await refreshResponse1.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Attacker tries to reuse the first (now-revoked) refresh token
+        // This should trigger token family revocation
+        var attackerRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken.RefreshToken!, // Reusing old token
+            ["client_id"] = app.ClientId
+        });
+
+        await _client.PostAsync("/oauth/token", attackerRequest); // This triggers family revocation
+
+        // Act - legitimate user tries to use their new token
+        var legitimateRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = secondToken!.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var legitimateResponse = await _client.PostAsync("/oauth/token", legitimateRequest);
+
+        // Assert - the entire family should be revoked
+        Assert.Equal(HttpStatusCode.BadRequest, legitimateResponse.StatusCode);
+
+        var error = await legitimateResponse.Content.ReadFromJsonAsync<OAuthErrorResponse>();
+        Assert.Equal(OAuthErrorCodes.InvalidGrant, error!.Error);
+    }
+
+    [Fact]
+    public async Task Revoke_Endpoint_RevokesRefreshToken()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Act - revoke the refresh token
+        var revokeRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["token"] = initialToken!.RefreshToken!,
+            ["token_type_hint"] = "refresh_token",
+            ["client_id"] = app.ClientId
+        });
+
+        var revokeResponse = await _client.PostAsync("/oauth/revoke", revokeRequest);
+
+        // Assert - revocation always returns 200 OK per RFC 7009
+        Assert.Equal(HttpStatusCode.OK, revokeResponse.StatusCode);
+
+        // Try to use the revoked token
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+
+        // The token should be rejected
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+
+        var error = await refreshResponse.Content.ReadFromJsonAsync<OAuthErrorResponse>();
+        Assert.Equal(OAuthErrorCodes.InvalidGrant, error!.Error);
+    }
+
+    [Fact]
+    public async Task Revoke_Endpoint_ReturnsOk_ForInvalidToken()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+
+        // Act - try to revoke a non-existent token
+        var revokeRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["token"] = "octr_invalid_token_that_does_not_exist",
+            ["client_id"] = app.ClientId
+        });
+
+        var revokeResponse = await _client.PostAsync("/oauth/revoke", revokeRequest);
+
+        // Assert - per RFC 7009, always return 200 OK even if token is invalid
+        Assert.Equal(HttpStatusCode.OK, revokeResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ConfidentialClient_RequiresClientSecret()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: false);
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens (confidential client can skip PKCE)
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["client_secret"] = "test_secret_12345"
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Act - try to refresh without client_secret
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken!.RefreshToken!,
+            ["client_id"] = app.ClientId
+            // Missing client_secret
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
+
+        var error = await refreshResponse.Content.ReadFromJsonAsync<OAuthErrorResponse>();
+        Assert.Equal(OAuthErrorCodes.InvalidClient, error!.Error);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ConfidentialClient_WorksWithValidSecret()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: false);
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["client_secret"] = "test_secret_12345"
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Act - refresh with client_secret
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken!.RefreshToken!,
+            ["client_id"] = app.ClientId,
+            ["client_secret"] = "test_secret_12345"
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+
+        var newToken = await refreshResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+        Assert.NotNull(newToken);
+        Assert.NotEmpty(newToken!.AccessToken);
+        Assert.NotNull(newToken.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshToken_PreservesScopes()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens with specific scopes
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read+write&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        var tokenResponse = await _client.PostAsync("/oauth/token", tokenRequest);
+        var initialToken = await tokenResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+        Assert.Contains("read", initialToken!.Scope);
+        Assert.Contains("write", initialToken.Scope);
+
+        // Act - refresh token
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = initialToken.RefreshToken!,
+            ["client_id"] = app.ClientId
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+        var newToken = await refreshResponse.Content.ReadFromJsonAsync<OAuthTokenResponse>();
+
+        // Assert - scopes should be preserved
+        Assert.Contains("read", newToken!.Scope);
+        Assert.Contains("write", newToken.Scope);
+    }
+
+    [Fact]
+    public async Task RefreshToken_ReturnsError_WhenTokenMissing()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+
+        // Act - refresh without token
+        var refreshRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["client_id"] = app.ClientId
+        });
+
+        var refreshResponse = await _client.PostAsync("/oauth/token", refreshRequest);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+
+        var error = await refreshResponse.Content.ReadFromJsonAsync<OAuthErrorResponse>();
+        Assert.Equal(OAuthErrorCodes.InvalidRequest, error!.Error);
+        Assert.Contains("refresh_token", error.ErrorDescription);
+    }
+
+    [Fact]
+    public async Task RefreshToken_AuditLog_IsCreated()
+    {
+        // Arrange
+        var (workspaceId, userId) = await CreateTestWorkspaceWithAdminUser();
+        var app = await CreateTestOAuthApp(workspaceId, userId, isPublic: true);
+        var (codeVerifier, codeChallenge) = GeneratePkceValues();
+        var redirectUri = "https://example.com/callback";
+
+        // Get initial tokens
+        var authResponse = await _client.GetAsync(
+            $"/oauth/authorize?response_type=code&client_id={app.ClientId}&redirect_uri={Uri.EscapeDataString(redirectUri)}&scope=read&code_challenge={codeChallenge}&code_challenge_method=S256");
+
+        var code = HttpUtility.ParseQueryString(authResponse.Headers.Location!.Query)["code"];
+
+        var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = "authorization_code",
+            ["code"] = code!,
+            ["redirect_uri"] = redirectUri,
+            ["client_id"] = app.ClientId,
+            ["code_verifier"] = codeVerifier
+        });
+
+        await _client.PostAsync("/oauth/token", tokenRequest);
+
+        // Act - check audit log
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<OctopusDbContext>();
+
+        var auditLogs = await dbContext.OAuthAppAuditLogs
+            .Where(l => l.OAuthAppId == app.Id && l.EventType == Domain.Enums.OAuthAppAuditEventType.RefreshTokenIssued)
+            .ToListAsync();
+
+        // Assert
+        Assert.Single(auditLogs);
+        var log = auditLogs.First();
+        Assert.Equal(app.Id, log.OAuthAppId);
+        Assert.NotNull(log.Details);
     }
 }

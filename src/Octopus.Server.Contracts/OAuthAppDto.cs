@@ -26,7 +26,11 @@ public enum OAuthAppAuditEventType
     Enabled = 2,
     Disabled = 3,
     Deleted = 4,
-    SecretRotated = 5
+    SecretRotated = 5,
+    RefreshTokenIssued = 6,
+    RefreshTokenRevoked = 7,
+    AllRefreshTokensRevoked = 8,
+    TokenReuseDetected = 9
 }
 
 /// <summary>

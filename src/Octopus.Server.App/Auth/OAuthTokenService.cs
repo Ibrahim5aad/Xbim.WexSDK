@@ -70,9 +70,19 @@ public interface IOAuthTokenService
     string GenerateAuthorizationCode();
 
     /// <summary>
+    /// Generates a cryptographically random refresh token.
+    /// </summary>
+    string GenerateRefreshToken();
+
+    /// <summary>
     /// Hashes an authorization code for storage.
     /// </summary>
     string HashCode(string code);
+
+    /// <summary>
+    /// Hashes a refresh token for storage using SHA-256.
+    /// </summary>
+    string HashRefreshToken(string token);
 
     /// <summary>
     /// Verifies a PKCE code verifier against a stored code challenge.
@@ -90,9 +100,24 @@ public interface IOAuthTokenService
     int AccessTokenLifetimeSeconds { get; }
 
     /// <summary>
+    /// Gets the refresh token lifetime in seconds.
+    /// </summary>
+    int RefreshTokenLifetimeSeconds { get; }
+
+    /// <summary>
+    /// Whether refresh tokens are enabled.
+    /// </summary>
+    bool RefreshTokensEnabled { get; }
+
+    /// <summary>
     /// Gets the authorization code expiration time from now.
     /// </summary>
     DateTimeOffset GetAuthorizationCodeExpiration();
+
+    /// <summary>
+    /// Gets the refresh token expiration time from now.
+    /// </summary>
+    DateTimeOffset GetRefreshTokenExpiration();
 }
 
 /// <summary>
@@ -119,6 +144,10 @@ public class OAuthTokenService : IOAuthTokenService
     }
 
     public int AccessTokenLifetimeSeconds => _options.AccessTokenLifetimeMinutes * 60;
+
+    public int RefreshTokenLifetimeSeconds => _options.RefreshTokenLifetimeDays * 24 * 60 * 60;
+
+    public bool RefreshTokensEnabled => _options.EnableRefreshTokens;
 
     public string GenerateAccessToken(
         string subject,
@@ -162,6 +191,29 @@ public class OAuthTokenService : IOAuthTokenService
             .Replace("+", "-")
             .Replace("/", "_")
             .TrimEnd('=');
+    }
+
+    public string GenerateRefreshToken()
+    {
+        // Generate a 256-bit random refresh token with "octr_" prefix for identification
+        var bytes = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        var token = Convert.ToBase64String(bytes)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
+        return $"octr_{token}";
+    }
+
+    public string HashRefreshToken(string token)
+    {
+        // Use SHA-256 for hashing refresh tokens
+        // Refresh tokens are long-lived but single-use per rotation
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(token);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
     }
 
     public string HashCode(string code)
@@ -242,5 +294,10 @@ public class OAuthTokenService : IOAuthTokenService
     public DateTimeOffset GetAuthorizationCodeExpiration()
     {
         return DateTimeOffset.UtcNow.AddMinutes(_options.AuthorizationCodeLifetimeMinutes);
+    }
+
+    public DateTimeOffset GetRefreshTokenExpiration()
+    {
+        return DateTimeOffset.UtcNow.AddDays(_options.RefreshTokenLifetimeDays);
     }
 }

@@ -33,5 +33,25 @@ public enum OAuthAppAuditEventType
     /// <summary>
     /// Client secret was rotated.
     /// </summary>
-    SecretRotated = 5
+    SecretRotated = 5,
+
+    /// <summary>
+    /// A refresh token was issued.
+    /// </summary>
+    RefreshTokenIssued = 6,
+
+    /// <summary>
+    /// A refresh token was revoked by user or admin.
+    /// </summary>
+    RefreshTokenRevoked = 7,
+
+    /// <summary>
+    /// All refresh tokens for the app were revoked.
+    /// </summary>
+    AllRefreshTokensRevoked = 8,
+
+    /// <summary>
+    /// Token reuse was detected (security event).
+    /// </summary>
+    TokenReuseDetected = 9
 }
