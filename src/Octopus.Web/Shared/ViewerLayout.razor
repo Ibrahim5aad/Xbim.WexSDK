@@ -1,0 +1,40 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeService ThemeService
+@inject IJSRuntime JSRuntime
+
+<div class="viewer-layout">
+    @Body
+</div>
+
+@code {
+    private bool _hasRendered;
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _hasRendered = true;
+            await ThemeService.ApplyAsync(JSRuntime);
+        }
+    }
+
+    private async void OnThemeChanged()
+    {
+        if (_hasRendered)
+        {
+            await ThemeService.ApplyAsync(JSRuntime);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}
