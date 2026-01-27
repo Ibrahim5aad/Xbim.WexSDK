@@ -98,6 +98,20 @@ main {
     margin-left: 1.5rem;
 }
 
+.top-row .theme-toggle {
+    background: transparent;
+    border: none;
+    color: var(--octopus-text-secondary);
+    font-size: 1.25rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.top-row .theme-toggle:hover {
+    color: var(--octopus-accent-primary);
+}
+
 .top-row a:first-child {
     overflow: hidden;
     text-overflow: ellipsis;

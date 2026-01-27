@@ -1,4 +1,7 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject ThemeService ThemeService
+@inject IJSRuntime JSRuntime
 
 <div class="page">
     <div class="sidebar">
@@ -7,6 +10,9 @@
 
     <main>
         <div class="top-row px-4">
+            <button class="btn btn-link theme-toggle" @onclick="ToggleTheme" title="Toggle theme">
+                <i class="bi @GetThemeIcon()"></i>
+            </button>
             <a href="https://github.com/Ibrahim5aad/Octopus" target="_blank">About</a>
         </div>
 
@@ -15,3 +21,47 @@
         </article>
     </main>
 </div>
+
+@code {
+    private bool _hasRendered;
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _hasRendered = true;
+            await ThemeService.ApplyAsync(JSRuntime);
+        }
+    }
+
+    private string GetThemeIcon()
+    {
+        return ThemeService.CurrentTheme == ViewerTheme.Light
+            ? "bi-sun"
+            : "bi-moon-stars";
+    }
+
+    private void ToggleTheme()
+    {
+        ThemeService.ToggleTheme();
+    }
+
+    private async void OnThemeChanged()
+    {
+        if (_hasRendered)
+        {
+            await ThemeService.ApplyAsync(JSRuntime);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+}
