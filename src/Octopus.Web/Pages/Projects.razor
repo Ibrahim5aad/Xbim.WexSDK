@@ -5,112 +5,128 @@
 
 <PageTitle>Projects</PageTitle>
 
-<h1>Projects</h1>
+<div class="page-header">
+    <h1>Projects</h1>
+    <p>Manage your BIM projects and their associated models.</p>
+</div>
 
-<div class="row mb-3">
-    <div class="col-md-4">
-        <label class="form-label">Select Workspace</label>
-        <select class="form-select" @onchange="OnWorkspaceChanged">
-            <option value="">-- Select a workspace --</option>
-            @if (workspaces != null)
-            {
-                @foreach (var ws in workspaces)
+<!-- Workspace Selector -->
+<div class="section-card">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label">Select Workspace</label>
+            <select class="form-select" @onchange="OnWorkspaceChanged">
+                <option value="">-- Select a workspace --</option>
+                @if (workspaces != null)
                 {
-                    <option value="@ws.Id" selected="@(ws.Id == selectedWorkspaceId)">@ws.Name</option>
+                    @foreach (var ws in workspaces)
+                    {
+                        <option value="@ws.Id" selected="@(ws.Id == selectedWorkspaceId)">@ws.Name</option>
+                    }
                 }
-            }
-        </select>
+            </select>
+        </div>
     </div>
 </div>
 
 @if (selectedWorkspaceId != Guid.Empty)
 {
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card">
-                <div class="card-header">Create New Project</div>
-                <div class="card-body">
-                    <EditForm Model="@newProject" OnValidSubmit="CreateProject">
-                        <DataAnnotationsValidator />
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Name</label>
-                                <InputText class="form-control" @bind-Value="newProject.Name" placeholder="Project name" />
-                                <ValidationMessage For="@(() => newProject.Name)" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Description</label>
-                                <InputText class="form-control" @bind-Value="newProject.Description" placeholder="Optional description" />
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary w-100" disabled="@creating">
-                                    @if (creating)
-                                    {
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    }
-                                    Create
-                                </button>
-                            </div>
-                        </div>
-                    </EditForm>
-                    @if (createError != null)
-                    {
-                        <div class="alert alert-danger mt-2">@createError</div>
-                    }
+    <!-- Create New Project -->
+    <div class="section-card">
+        <h3 class="section-title">
+            <i class="bi bi-folder-plus"></i>
+            Create New Project
+        </h3>
+        <EditForm Model="@newProject" OnValidSubmit="CreateProject">
+            <DataAnnotationsValidator />
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" @bind-Value="newProject.Name" placeholder="Project name" />
+                    <ValidationMessage For="@(() => newProject.Name)" />
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Description</label>
+                    <InputText class="form-control" @bind-Value="newProject.Description" placeholder="Optional description" />
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100" disabled="@creating">
+                        @if (creating)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        }
+                        <i class="bi bi-folder-plus"></i>
+                        Create Project
+                    </button>
                 </div>
             </div>
-        </div>
+        </EditForm>
+        @if (createError != null)
+        {
+            <div class="alert alert-danger mt-3">@createError</div>
+        }
     </div>
 
-    <div class="card">
-        <div class="card-header">Projects in Workspace</div>
-        <div class="card-body">
-            @if (loadingProjects)
+    <!-- Projects Grid -->
+    @if (loadingProjects)
+    {
+        <div class="loading-state">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (projectsError != null)
+    {
+        <div class="alert alert-warning">@projectsError</div>
+    }
+    else if (projects == null || !projects.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-folder"></i>
+            </div>
+            <h3>No projects yet</h3>
+            <p>Create your first project above to start uploading models.</p>
+        </div>
+    }
+    else
+    {
+        <div class="dashboard-grid">
+            @foreach (var proj in projects)
             {
-                <p><em>Loading projects...</em></p>
-            }
-            else if (projectsError != null)
-            {
-                <div class="alert alert-warning">@projectsError</div>
-            }
-            else if (projects == null || !projects.Any())
-            {
-                <p>No projects in this workspace. Create one above.</p>
-            }
-            else
-            {
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var proj in projects)
-                        {
-                            <tr>
-                                <td>@proj.Name</td>
-                                <td>@proj.Description</td>
-                                <td>@(proj.CreatedAt?.LocalDateTime.ToString("g") ?? "-")</td>
-                                <td>
-                                    <a href="@($"models?projectId={proj.Id}")" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-box"></i> Models
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <div class="item-card">
+                    <div class="item-icon" style="background: var(--octopus-success-bg); color: var(--octopus-success);">
+                        <i class="bi bi-folder"></i>
+                    </div>
+                    <h3 class="item-title">@proj.Name</h3>
+                    <p class="item-description">@(string.IsNullOrEmpty(proj.Description) ? "No description provided." : proj.Description)</p>
+                    <div class="item-meta">
+                        <span>
+                            <i class="bi bi-calendar"></i>
+                            @(proj.CreatedAt?.LocalDateTime.ToString("MMM d, yyyy") ?? "-")
+                        </span>
+                    </div>
+                    <div class="item-actions">
+                        <a href="@($"models?projectId={proj.Id}")" class="btn btn-primary flex-1">
+                            <i class="bi bi-box"></i>
+                            View Models
+                        </a>
+                    </div>
+                </div>
             }
         </div>
-    </div>
+    }
 }
 else
 {
-    <div class="alert alert-info">Select a workspace to view and manage projects.</div>
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="bi bi-folder"></i>
+        </div>
+        <h3>Select a workspace</h3>
+        <p>Choose a workspace above to view and manage its projects.</p>
+    </div>
 }
 
 @code {

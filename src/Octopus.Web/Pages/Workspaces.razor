@@ -4,111 +4,122 @@
 
 <PageTitle>Workspaces</PageTitle>
 
-<h1>Workspaces</h1>
+<div class="page-header">
+    <h1>Workspaces</h1>
+    <p>Organize your BIM projects into separate workspaces.</p>
+</div>
 
-<div class="row mb-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-header">Create New Workspace</div>
-            <div class="card-body">
-                <EditForm Model="@newWorkspace" OnValidSubmit="CreateWorkspace">
-                    <DataAnnotationsValidator />
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Name</label>
-                            <InputText class="form-control" @bind-Value="newWorkspace.Name" placeholder="Workspace name" />
-                            <ValidationMessage For="@(() => newWorkspace.Name)" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Description</label>
-                            <InputText class="form-control" @bind-Value="newWorkspace.Description" placeholder="Optional description" />
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100" disabled="@creating">
-                                @if (creating)
-                                {
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                }
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                </EditForm>
-                @if (createError != null)
-                {
-                    <div class="alert alert-danger mt-2">@createError</div>
-                }
+<!-- Create New Workspace -->
+<div class="section-card">
+    <h3 class="section-title">
+        <i class="bi bi-plus-circle"></i>
+        Create New Workspace
+    </h3>
+    <EditForm Model="@newWorkspace" OnValidSubmit="CreateWorkspace">
+        <DataAnnotationsValidator />
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="newWorkspace.Name" placeholder="Workspace name" />
+                <ValidationMessage For="@(() => newWorkspace.Name)" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Description</label>
+                <InputText class="form-control" @bind-Value="newWorkspace.Description" placeholder="Optional description" />
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100" disabled="@creating">
+                    @if (creating)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    }
+                    <i class="bi bi-plus-circle"></i>
+                    Create Workspace
+                </button>
             </div>
         </div>
-    </div>
+    </EditForm>
+    @if (createError != null)
+    {
+        <div class="alert alert-danger mt-3">@createError</div>
+    }
 </div>
 
-<div class="card">
-    <div class="card-header">Your Workspaces</div>
-    <div class="card-body">
-        @if (loading)
+<!-- Workspaces Grid -->
+@if (loading)
+{
+    <div class="loading-state">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else if (loadError != null)
+{
+    <div class="alert alert-warning">@loadError</div>
+}
+else if (workspaces == null || !workspaces.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="bi bi-collection"></i>
+        </div>
+        <h3>No workspaces yet</h3>
+        <p>Create your first workspace above to get started.</p>
+    </div>
+}
+else
+{
+    <div class="dashboard-grid">
+        @foreach (var ws in workspaces)
         {
-            <p><em>Loading...</em></p>
-        }
-        else if (loadError != null)
-        {
-            <div class="alert alert-warning">@loadError</div>
-        }
-        else if (workspaces == null || !workspaces.Any())
-        {
-            <p>No workspaces found. Create one above to get started.</p>
-        }
-        else
-        {
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var ws in workspaces)
-                    {
-                        <tr>
-                            <td>@ws.Name</td>
-                            <td>@ws.Description</td>
-                            <td>@(ws.CreatedAt?.LocalDateTime.ToString("g") ?? "-")</td>
-                            <td>
-                                <a href="@($"projects?workspaceId={ws.Id}")" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-folder"></i> Projects
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-
-            @if (totalPages > 1)
-            {
-                <nav>
-                    <ul class="pagination">
-                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => LoadPageAsync(currentPage - 1)">Previous</button>
-                        </li>
-                        @for (int i = 1; i <= totalPages; i++)
-                        {
-                            var pageNum = i;
-                            <li class="page-item @(currentPage == pageNum ? "active" : "")">
-                                <button class="page-link" @onclick="() => LoadPageAsync(pageNum)">@pageNum</button>
-                            </li>
-                        }
-                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                            <button class="page-link" @onclick="() => LoadPageAsync(currentPage + 1)">Next</button>
-                        </li>
-                    </ul>
-                </nav>
-            }
+            <div class="item-card">
+                <div class="item-icon">
+                    <i class="bi bi-collection"></i>
+                </div>
+                <h3 class="item-title">@ws.Name</h3>
+                <p class="item-description">@(string.IsNullOrEmpty(ws.Description) ? "No description provided." : ws.Description)</p>
+                <div class="item-meta">
+                    <span>
+                        <i class="bi bi-calendar"></i>
+                        @(ws.CreatedAt?.LocalDateTime.ToString("MMM d, yyyy") ?? "-")
+                    </span>
+                </div>
+                <div class="item-actions">
+                    <a href="@($"projects?workspaceId={ws.Id}")" class="btn btn-primary flex-1">
+                        <i class="bi bi-folder"></i>
+                        Open Projects
+                    </a>
+                </div>
+            </div>
         }
     </div>
-</div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPageAsync(currentPage - 1)">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                </li>
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    var pageNum = i;
+                    <li class="page-item @(currentPage == pageNum ? "active" : "")">
+                        <button class="page-link" @onclick="() => LoadPageAsync(pageNum)">@pageNum</button>
+                    </li>
+                }
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPageAsync(currentPage + 1)">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    }
+}
 
 @code {
     private List<WorkspaceDto>? workspaces;
@@ -116,7 +127,7 @@
     private string? loadError;
     private int currentPage = 1;
     private int totalPages = 1;
-    private const int PageSize = 10;
+    private const int PageSize = 12;
 
     private CreateWorkspaceRequest newWorkspace = new();
     private bool creating = false;

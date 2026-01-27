@@ -3,22 +3,46 @@
 @inject ThemeService ThemeService
 @inject IJSRuntime JSRuntime
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <button class="btn btn-link theme-toggle" @onclick="ToggleTheme" title="Toggle theme">
-                <i class="bi @GetThemeIcon()"></i>
-            </button>
-            <a href="https://github.com/Ibrahim5aad/Octopus" target="_blank">About</a>
+<div class="app-layout">
+    <header class="app-header">
+        <div class="header-content">
+            <a class="app-logo" href="">
+                <i class="bi bi-box-fill"></i>
+                <span>Octopus</span>
+            </a>
+            <nav class="app-nav">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-door"></i>
+                    <span>Home</span>
+                </NavLink>
+                <NavLink class="nav-link" href="workspaces">
+                    <i class="bi bi-collection"></i>
+                    <span>Workspaces</span>
+                </NavLink>
+                <NavLink class="nav-link" href="projects">
+                    <i class="bi bi-folder"></i>
+                    <span>Projects</span>
+                </NavLink>
+                <NavLink class="nav-link" href="models">
+                    <i class="bi bi-box"></i>
+                    <span>Models</span>
+                </NavLink>
+            </nav>
+            <div class="header-actions">
+                <button class="theme-toggle" @onclick="ToggleTheme" title="Toggle theme">
+                    <i class="bi @GetThemeIcon()"></i>
+                </button>
+                <a href="https://github.com/Ibrahim5aad/Octopus" target="_blank" class="btn-icon" title="GitHub">
+                    <i class="bi bi-github"></i>
+                </a>
+            </div>
         </div>
+    </header>
 
-        <article class="content px-4">
+    <main class="app-main">
+        <div class="container-xl">
             @Body
-        </article>
+        </div>
     </main>
 </div>
 

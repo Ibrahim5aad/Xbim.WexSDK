@@ -1,67 +1,137 @@
 @page "/"
 @inject IWorkspacesService WorkspacesService
+@inject IProjectsService ProjectsService
+@inject IModelsService ModelsService
 
-<PageTitle>Octopus - Home</PageTitle>
+<PageTitle>Octopus - Dashboard</PageTitle>
 
-<h1>Octopus Platform</h1>
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>Welcome back! Here's an overview of your BIM platform.</p>
+</div>
 
-<p>Welcome to the Octopus BIM Platform. Navigate using the sidebar to manage your workspaces, projects, and models.</p>
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-collection-fill"></i> Recent Workspaces
-            </div>
-            <div class="card-body">
-                @if (loadingWorkspaces)
-                {
-                    <p><em>Loading workspaces...</em></p>
-                }
-                else if (workspacesError != null)
-                {
-                    <div class="alert alert-warning">@workspacesError</div>
-                }
-                else if (workspaces == null || !workspaces.Any())
-                {
-                    <p>No workspaces yet. <a href="workspaces">Create your first workspace</a></p>
-                }
-                else
-                {
-                    <ul class="list-group list-group-flush">
-                        @foreach (var ws in workspaces.Take(5))
-                        {
-                            <li class="list-group-item">
-                                <a href="@($"projects?workspaceId={ws.Id}")">@ws.Name</a>
-                                <small class="text-muted d-block">@ws.Description</small>
-                            </li>
-                        }
-                    </ul>
-                    @if (workspaces.Count() > 5)
-                    {
-                        <a href="workspaces" class="btn btn-link">View all workspaces</a>
-                    }
-                }
-            </div>
+<!-- Stats Row -->
+<div class="dashboard-grid-4 mb-4">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="bi bi-collection"></i>
         </div>
+        <div class="stat-value">@workspaceCount</div>
+        <div class="stat-label">Workspaces</div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-lightning-fill"></i> Quick Actions
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="workspaces" class="btn btn-outline-primary">
-                        <i class="bi bi-plus-circle"></i> Create Workspace
-                    </a>
-                    <a href="projects" class="btn btn-outline-primary">
-                        <i class="bi bi-plus-circle"></i> Create Project
-                    </a>
-                    <a href="models" class="btn btn-outline-primary">
-                        <i class="bi bi-upload"></i> Upload Model
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="bi bi-folder"></i>
+        </div>
+        <div class="stat-value">@projectCount</div>
+        <div class="stat-label">Projects</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon info">
+            <i class="bi bi-box"></i>
+        </div>
+        <div class="stat-value">@modelCount</div>
+        <div class="stat-label">Models</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="bi bi-lightning"></i>
+        </div>
+        <div class="stat-value">@readyCount</div>
+        <div class="stat-label">Ready to View</div>
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div class="dashboard-grid-2">
+    <!-- Recent Workspaces -->
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-collection"></i>
+            Recent Workspaces
+        </div>
+        <div class="card-body">
+            @if (loadingWorkspaces)
+            {
+                <div class="loading-state">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (workspacesError != null)
+            {
+                <div class="alert alert-warning">@workspacesError</div>
+            }
+            else if (workspaces == null || !workspaces.Any())
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-collection"></i>
+                    </div>
+                    <h3>No workspaces yet</h3>
+                    <p>Create your first workspace to get started organizing your BIM projects.</p>
+                    <a href="workspaces" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i>
+                        Create Workspace
                     </a>
                 </div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var ws in workspaces.Take(5))
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="@($"projects?workspaceId={ws.Id}")">@ws.Name</a>
+                                <small class="text-muted d-block">@(string.IsNullOrEmpty(ws.Description) ? "No description" : ws.Description)</small>
+                            </div>
+                            <a href="@($"projects?workspaceId={ws.Id}")" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                @if (workspaces.Count() > 5)
+                {
+                    <div class="mt-3 text-center">
+                        <a href="workspaces" class="btn btn-link">View all workspaces</a>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-lightning"></i>
+            Quick Actions
+        </div>
+        <div class="card-body">
+            <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+                <a href="workspaces" class="item-card" style="text-decoration: none;">
+                    <div class="item-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <h3 class="item-title">Create Workspace</h3>
+                    <p class="item-description">Set up a new workspace to organize related projects.</p>
+                </a>
+                <a href="projects" class="item-card" style="text-decoration: none;">
+                    <div class="item-icon" style="background: var(--octopus-success-bg); color: var(--octopus-success);">
+                        <i class="bi bi-folder-plus"></i>
+                    </div>
+                    <h3 class="item-title">Create Project</h3>
+                    <p class="item-description">Start a new project within an existing workspace.</p>
+                </a>
+                <a href="models" class="item-card" style="text-decoration: none;">
+                    <div class="item-icon" style="background: var(--octopus-info-bg); color: var(--octopus-info);">
+                        <i class="bi bi-cloud-upload"></i>
+                    </div>
+                    <h3 class="item-title">Upload Model</h3>
+                    <p class="item-description">Upload an IFC file to process and view in 3D.</p>
+                </a>
             </div>
         </div>
     </div>
@@ -72,7 +142,44 @@
     private bool loadingWorkspaces = true;
     private string? workspacesError;
 
+    private int workspaceCount = 0;
+    private int projectCount = 0;
+    private int modelCount = 0;
+    private int readyCount = 0;
+
     protected override async Task OnInitializedAsync()
+    {
+        await LoadStatsAsync();
+        await LoadWorkspacesAsync();
+    }
+
+    private async Task LoadStatsAsync()
+    {
+        try
+        {
+            // Load workspace count
+            var wsResult = await WorkspacesService.ListAsync(1, 1);
+            workspaceCount = wsResult.TotalCount ?? 0;
+
+            // Load workspaces to count projects
+            if (workspaceCount > 0)
+            {
+                var allWs = await WorkspacesService.ListAsync(1, 100);
+                foreach (var ws in allWs.Items ?? Enumerable.Empty<WorkspaceDto>())
+                {
+                    try
+                    {
+                        var projResult = await ProjectsService.ListAsync(ws.Id ?? Guid.Empty, 1, 1);
+                        projectCount += projResult.TotalCount ?? 0;
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadWorkspacesAsync()
     {
         try
         {

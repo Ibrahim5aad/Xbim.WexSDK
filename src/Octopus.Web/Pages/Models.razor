@@ -9,172 +9,195 @@
 
 <PageTitle>Models</PageTitle>
 
-<h1>Models</h1>
+<div class="page-header">
+    <h1>Models</h1>
+    <p>Upload and manage your IFC models for 3D visualization.</p>
+</div>
 
-<div class="row mb-3">
-    <div class="col-md-4">
-        <label class="form-label">Select Workspace</label>
-        <select class="form-select" @onchange="OnWorkspaceChanged">
-            <option value="">-- Select a workspace --</option>
-            @if (workspaces != null)
-            {
-                @foreach (var ws in workspaces)
+<!-- Workspace & Project Selector -->
+<div class="section-card">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Select Workspace</label>
+            <select class="form-select" @onchange="OnWorkspaceChanged">
+                <option value="">-- Select a workspace --</option>
+                @if (workspaces != null)
                 {
-                    <option value="@ws.Id" selected="@(ws.Id == selectedWorkspaceId)">@ws.Name</option>
+                    @foreach (var ws in workspaces)
+                    {
+                        <option value="@ws.Id" selected="@(ws.Id == selectedWorkspaceId)">@ws.Name</option>
+                    }
                 }
-            }
-        </select>
-    </div>
-    <div class="col-md-4">
-        <label class="form-label">Select Project</label>
-        <select class="form-select" @onchange="OnProjectChanged" disabled="@(selectedWorkspaceId == Guid.Empty)">
-            <option value="">-- Select a project --</option>
-            @if (projects != null)
-            {
-                @foreach (var proj in projects)
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Select Project</label>
+            <select class="form-select" @onchange="OnProjectChanged" disabled="@(selectedWorkspaceId == Guid.Empty)">
+                <option value="">-- Select a project --</option>
+                @if (projects != null)
                 {
-                    <option value="@proj.Id" selected="@(proj.Id == selectedProjectId)">@proj.Name</option>
+                    @foreach (var proj in projects)
+                    {
+                        <option value="@proj.Id" selected="@(proj.Id == selectedProjectId)">@proj.Name</option>
+                    }
                 }
-            }
-        </select>
+            </select>
+        </div>
     </div>
 </div>
 
 @if (selectedProjectId != Guid.Empty)
 {
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card">
-                <div class="card-header">Upload IFC Model</div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Model Name</label>
-                            <input type="text" class="form-control" @bind="newModelName" placeholder="Model name" />
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">IFC File</label>
-                            <InputFile class="form-control" OnChange="OnFileSelected" accept=".ifc" />
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-primary w-100" @onclick="UploadAndProcess" disabled="@(uploading || selectedFile == null)">
-                                @if (uploading)
-                                {
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    @uploadStatus
-                                }
-                                else
-                                {
-                                    <i class="bi bi-upload"></i>
-                                    <text> Upload & Process</text>
-                                }
-                            </button>
-                        </div>
-                    </div>
-                    @if (uploadError != null)
+    <!-- Upload Section -->
+    <div class="section-card">
+        <h3 class="section-title">
+            <i class="bi bi-cloud-upload"></i>
+            Upload IFC Model
+        </h3>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Model Name</label>
+                <input type="text" class="form-control" @bind="newModelName" placeholder="Model name" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">IFC File</label>
+                <InputFile class="form-control" OnChange="OnFileSelected" accept=".ifc" />
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-primary w-100" @onclick="UploadAndProcess" disabled="@(uploading || selectedFile == null)">
+                    @if (uploading)
                     {
-                        <div class="alert alert-danger mt-2">@uploadError</div>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        @uploadStatus
                     }
-                </div>
+                    else
+                    {
+                        <i class="bi bi-cloud-upload"></i>
+                        <text>Upload & Process</text>
+                    }
+                </button>
             </div>
         </div>
+        @if (uploadError != null)
+        {
+            <div class="alert alert-danger mt-3">@uploadError</div>
+        }
     </div>
 
-    <div class="card">
-        <div class="card-header">Models in Project</div>
-        <div class="card-body">
-            @if (loadingModels)
+    <!-- Models List -->
+    @if (loadingModels)
+    {
+        <div class="loading-state">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (modelsError != null)
+    {
+        <div class="alert alert-warning">@modelsError</div>
+    }
+    else if (models == null || !models.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-box"></i>
+            </div>
+            <h3>No models yet</h3>
+            <p>Upload an IFC file above to get started.</p>
+        </div>
+    }
+    else
+    {
+        <div class="dashboard-grid">
+            @foreach (var model in models)
             {
-                <p><em>Loading models...</em></p>
-            }
-            else if (modelsError != null)
-            {
-                <div class="alert alert-warning">@modelsError</div>
-            }
-            else if (models == null || !models.Any())
-            {
-                <p>No models in this project. Upload an IFC file above.</p>
-            }
-            else
-            {
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var model in models)
-                        {
-                            <tr>
-                                <td>@model.Name</td>
-                                <td>@(model.CreatedAt?.LocalDateTime.ToString("g") ?? "-")</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewVersions(model.Id)">
-                                        <i class="bi bi-list"></i> Versions
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <div class="item-card">
+                    <div class="item-icon" style="background: var(--octopus-info-bg); color: var(--octopus-info);">
+                        <i class="bi bi-box"></i>
+                    </div>
+                    <h3 class="item-title">@model.Name</h3>
+                    <div class="item-meta">
+                        <span>
+                            <i class="bi bi-calendar"></i>
+                            @(model.CreatedAt?.LocalDateTime.ToString("MMM d, yyyy") ?? "-")
+                        </span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn @(selectedModelId == model.Id ? "btn-primary" : "btn-outline-primary") flex-1" @onclick="() => ViewVersions(model.Id)">
+                            <i class="bi bi-list"></i>
+                            @(selectedModelId == model.Id ? "Viewing Versions" : "View Versions")
+                        </button>
+                    </div>
+                </div>
             }
         </div>
-    </div>
+    }
 
+    <!-- Model Versions -->
     @if (selectedModelId.HasValue && modelVersions != null)
     {
         <div class="card mt-4">
-            <div class="card-header">
-                Model Versions
-                <button type="button" class="btn-close float-end" @onclick="() => selectedModelId = null"></button>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-clock-history"></i>
+                    Model Versions
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => selectedModelId = null">
+                    <i class="bi bi-x"></i>
+                </button>
             </div>
             <div class="card-body">
                 @if (!modelVersions.Any())
                 {
-                    <p>No versions yet.</p>
+                    <div class="empty-state">
+                        <p>No versions yet.</p>
+                    </div>
                 }
                 else
                 {
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Version</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var version in modelVersions)
-                            {
-                                var status = watchedStatuses.GetValueOrDefault(version.Id ?? Guid.Empty, version.Status);
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <td>@version.VersionNumber</td>
-                                    <td>
-                                        <span class="badge @GetStatusBadgeClass(status)">
-                                            @GetStatusText(status)
-                                            @if (status == ProcessingStatus._0 || status == ProcessingStatus._1)
-                                            {
-                                                <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>
-                                            }
-                                        </span>
-                                    </td>
-                                    <td>@(version.CreatedAt?.LocalDateTime.ToString("g") ?? "-")</td>
-                                    <td>
-                                        @if (status == ProcessingStatus._2)
-                                        {
-                                            <a href="@($"viewer?versionId={version.Id}")" class="btn btn-sm btn-outline-success">
-                                                <i class="bi bi-eye"></i> View
-                                            </a>
-                                        }
-                                    </td>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var version in modelVersions)
+                                {
+                                    var status = watchedStatuses.GetValueOrDefault(version.Id ?? Guid.Empty, version.Status);
+                                    <tr>
+                                        <td>
+                                            <strong>v@version.VersionNumber</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetStatusBadgeClass(status)">
+                                                @GetStatusText(status)
+                                                @if (status == ProcessingStatus._0 || status == ProcessingStatus._1)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>
+                                                }
+                                            </span>
+                                        </td>
+                                        <td>@(version.CreatedAt?.LocalDateTime.ToString("MMM d, yyyy h:mm tt") ?? "-")</td>
+                                        <td>
+                                            @if (status == ProcessingStatus._2)
+                                            {
+                                                <a href="@($"viewer?versionId={version.Id}")" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-eye"></i>
+                                                    View in 3D
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
             </div>
         </div>
@@ -182,7 +205,13 @@
 }
 else
 {
-    <div class="alert alert-info">Select a workspace and project to view and manage models.</div>
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="bi bi-box"></i>
+        </div>
+        <h3>Select a project</h3>
+        <p>Choose a workspace and project above to view and manage models.</p>
+    </div>
 }
 
 @code {

@@ -73,13 +73,16 @@ else if (modelVersion != null)
             </OctopusViewer>
 
             <div class="viewer-header-overlay">
-                <div class="model-info">
-                    <strong>@model?.Name</strong>
-                    <span class="text-muted ms-2">v@modelVersion.VersionNumber</span>
+                <div></div>
+                <div class="viewer-header-right">
+                    <div class="model-info">
+                        <strong>@model?.Name</strong>
+                        <span class="version-badge">v@(modelVersion.VersionNumber)</span>
+                    </div>
+                    <a href="models?projectId=@model?.ProjectId" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
                 </div>
-                <a href="models?projectId=@model?.ProjectId" class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
             </div>
         }
         else if (modelVersion.Status == ProcessingStatus._1 || modelVersion.Status == ProcessingStatus._0)

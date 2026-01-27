@@ -19,12 +19,12 @@
     --octopus-accent-primary: #0066cc;
     --octopus-accent-primary-hover: #0052a3;
     --octopus-accent-primary-bg: rgba(0, 102, 204, 0.1);
-    
-    --octopus-shadow-sm: none;
-    --octopus-shadow-md: none;
-    --octopus-shadow-lg: none;
-    --octopus-shadow-xl: none;
-    
+
+    --octopus-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --octopus-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    --octopus-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    --octopus-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
     --octopus-success: #28a745;
     --octopus-success-bg: rgba(40, 167, 69, 0.1);
     --octopus-warning: #ffc107;
@@ -61,11 +61,11 @@
     --octopus-accent-primary-hover: #66b3ff;
     --octopus-accent-primary-bg: rgba(77, 163, 255, 0.2);
     
-    --octopus-shadow-sm: none;
-    --octopus-shadow-md: none;
-    --octopus-shadow-lg: none;
-    --octopus-shadow-xl: none;
-    
+    --octopus-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --octopus-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    --octopus-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+    --octopus-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+
     --octopus-success: #4caf50;
     --octopus-success-bg: rgba(76, 175, 80, 0.2);
     --octopus-warning: #ffb300;
