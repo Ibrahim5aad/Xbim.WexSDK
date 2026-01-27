@@ -54,7 +54,7 @@ jobs:
     - name: Update version in csproj files
       run: |
         sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Blazor/Octopus.Blazor.csproj
-        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Client/Octopus.Client.csproj
+        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Api.Client/Octopus.Api.Client.csproj
         echo "Updated version to ${{ steps.get_version.outputs.version }}"
       shell: bash
 
@@ -66,7 +66,7 @@ jobs:
 
     - name: Pack NuGet packages
       run: |
-        dotnet pack src/Octopus.Client/Octopus.Client.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Octopus.Api.Client/Octopus.Api.Client.csproj --configuration Release --no-build --output ./artifacts
         dotnet pack src/Octopus.Blazor/Octopus.Blazor.csproj --configuration Release --no-build --output ./artifacts
       
     - name: Push to NuGet.org
@@ -94,10 +94,10 @@ jobs:
           dotnet add package Octopus.Blazor --version ${{ steps.get_version.outputs.version }}
           ```
 
-          ### Octopus.Client
-          [NuGet.org](https://www.nuget.org/packages/Octopus.Client/${{ steps.get_version.outputs.version }})
+          ### Octopus.Api.Client
+          [NuGet.org](https://www.nuget.org/packages/Octopus.Api.Client/${{ steps.get_version.outputs.version }})
           ```bash
-          dotnet add package Octopus.Client --version ${{ steps.get_version.outputs.version }}
+          dotnet add package Octopus.Api.Client --version ${{ steps.get_version.outputs.version }}
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,7 +106,7 @@ jobs:
       run: |
         if [ "${{ github.ref_type }}" == "tag" ]; then
           echo "✅ Published Octopus.Blazor v${{ steps.get_version.outputs.version }} to NuGet.org"
-          echo "✅ Published Octopus.Client v${{ steps.get_version.outputs.version }} to NuGet.org"
+          echo "✅ Published Octopus.Api.Client v${{ steps.get_version.outputs.version }} to NuGet.org"
           echo "✅ Created GitHub Release for v${{ steps.get_version.outputs.version }}"
         else
           echo "✅ Build successful - Packages created but NOT published (push a tag to publish)"

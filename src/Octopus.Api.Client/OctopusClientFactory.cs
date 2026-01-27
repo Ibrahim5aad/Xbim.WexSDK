@@ -1,4 +1,4 @@
-namespace Octopus.Client;
+namespace Octopus.Api.Client;
 
 /// <summary>
 /// Factory for creating configured OctopusApiClient instances.

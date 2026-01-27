@@ -41,9 +41,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Server.Processing",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Server.Processing.Tests", "tests\Octopus.Server.Processing.Tests\Octopus.Server.Processing.Tests.csproj", "{ECEF2778-19DD-4A9B-B9F2-32797CC4AB2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Client", "src\Octopus.Client\Octopus.Client.csproj", "{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Api.Client", "src\Octopus.Api.Client\Octopus.Api.Client.csproj", "{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Client.Tests", "tests\Octopus.Client.Tests\Octopus.Client.Tests.csproj", "{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Api.Client.Tests", "tests\Octopus.Api.Client.Tests\Octopus.Api.Client.Tests.csproj", "{6B7FE554-78AF-413D-BBE9-85DE39D5CCD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Octopus.Blazor.Tests", "tests\Octopus.Blazor.Tests\Octopus.Blazor.Tests.csproj", "{20D1CB71-D7A0-4522-9948-64A717B1E212}"
 EndProject

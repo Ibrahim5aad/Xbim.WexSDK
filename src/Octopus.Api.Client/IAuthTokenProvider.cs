@@ -1,4 +1,4 @@
-namespace Octopus.Client;
+namespace Octopus.Api.Client;
 
 /// <summary>
 /// Provides authentication tokens for API requests.

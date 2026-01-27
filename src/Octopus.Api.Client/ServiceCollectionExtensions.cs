@@ -2,10 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http.Resilience;
 
-namespace Octopus.Client;
+namespace Octopus.Api.Client;
 
 /// <summary>
-/// Extension methods for registering Octopus.Client services in DI containers.
+/// Extension methods for registering Octopus.Api.Client services in DI containers.
 /// </summary>
 public static class ServiceCollectionExtensions
 {

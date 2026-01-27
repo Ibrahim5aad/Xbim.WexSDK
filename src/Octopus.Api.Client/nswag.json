@@ -46,7 +46,7 @@
       "wrapResponses": false,
       "generateResponseClasses": true,
       "responseClass": "SwaggerResponse",
-      "namespace": "Octopus.Client",
+      "namespace": "Octopus.Api.Client",
       "requiredPropertiesMustBeDefined": true,
       "dateType": "System.DateTimeOffset",
       "jsonConverters": null,

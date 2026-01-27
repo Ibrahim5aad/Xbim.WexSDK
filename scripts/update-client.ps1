@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Updates the Octopus.Client by fetching the latest OpenAPI spec from the server.
+    Updates the Octopus.Api.Client by fetching the latest OpenAPI spec from the server.
 
 .DESCRIPTION
     This script:
@@ -33,7 +33,7 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 $serverProject = Join-Path $repoRoot "src/Octopus.Server.App/Octopus.Server.App.csproj"
-$clientDir = Join-Path $repoRoot "src/Octopus.Client"
+$clientDir = Join-Path $repoRoot "src/Octopus.Api.Client"
 $swaggerPath = Join-Path $clientDir "swagger.json"
 
 Write-Host "== Octopus Client Update ==" -ForegroundColor Cyan
@@ -84,7 +84,7 @@ try {
     }
 }
 
-Write-Host "Rebuilding Octopus.Client to regenerate code..." -ForegroundColor Yellow
+Write-Host "Rebuilding Octopus.Api.Client to regenerate code..." -ForegroundColor Yellow
 Push-Location $clientDir
 try {
     # Force regeneration by touching swagger.json or cleaning
@@ -94,4 +94,4 @@ try {
 }
 
 Write-Host "== Client updated successfully! ==" -ForegroundColor Cyan
-Write-Host "Generated file: src/Octopus.Client/Generated/OctopusClient.cs"
+Write-Host "Generated file: src/Octopus.Api.Client/Generated/OctopusClient.cs"

@@ -1,7 +1,7 @@
-# Octopus.Client
+# Octopus.Api.Client
 
-[![NuGet](https://img.shields.io/nuget/v/Octopus.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Client/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/Octopus.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Client/)
+[![NuGet](https://img.shields.io/nuget/v/Octopus.Api.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Api.Client/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Octopus.Api.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Api.Client/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A typed HTTP client for the Octopus Server API. Use this package to connect your BIM applications to Octopus Server for model storage, processing, and management. Auto-generated from OpenAPI/Swagger specifications using NSwag.
@@ -18,7 +18,7 @@ This package is required when using [Octopus.Blazor](https://www.nuget.org/packa
 ## Installation
 
 ```bash
-dotnet add package Octopus.Client
+dotnet add package Octopus.Api.Client
 ```
 
 ## Quick Start

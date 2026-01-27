@@ -34,7 +34,7 @@ dotnet add package Octopus.Blazor
 For platform mode, also install the API client:
 
 ```bash
-dotnet add package Octopus.Client
+dotnet add package Octopus.Api.Client
 ```
 
 ## Quick Start
@@ -309,4 +309,4 @@ MIT
 
 ## Related Packages
 
-- [Octopus.Client](https://www.nuget.org/packages/Octopus.Client/) - API client for Octopus Server
+- [Octopus.Api.Client](https://www.nuget.org/packages/Octopus.Api.Client/) - API client for Octopus Server

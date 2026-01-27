@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Octopus.Client\Octopus.Client.csproj" />
+    <ProjectReference Include="..\..\src\Octopus.Api.Client\Octopus.Api.Client.csproj" />
     <ProjectReference Include="..\..\src\Octopus.Server.App\Octopus.Server.App.csproj" />
     <ProjectReference Include="..\..\src\Octopus.Server.Persistence.EfCore\Octopus.Server.Persistence.EfCore.csproj" />
     <ProjectReference Include="..\..\src\Octopus.Server.Abstractions\Octopus.Server.Abstractions.csproj" />

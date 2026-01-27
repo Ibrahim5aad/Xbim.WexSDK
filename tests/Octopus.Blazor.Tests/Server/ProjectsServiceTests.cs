@@ -1,7 +1,7 @@
 using Moq;
 using Octopus.Blazor.Services.Abstractions.Server;
 using Octopus.Blazor.Services.Server;
-using Octopus.Client;
+using Octopus.Api.Client;
 
 namespace Octopus.Blazor.Tests.Server;
 

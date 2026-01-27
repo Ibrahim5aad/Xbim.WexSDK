@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Octopus.Client.Tests;
+namespace Octopus.Api.Client.Tests;
 
 public class TokenProviderTests
 {

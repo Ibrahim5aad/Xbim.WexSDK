@@ -1,7 +1,7 @@
 using System.Net;
 using Xunit;
 
-namespace Octopus.Client.Tests;
+namespace Octopus.Api.Client.Tests;
 
 public class AuthorizationDelegatingHandlerTests
 {

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Octopus.Client;
+using Octopus.Api.Client;
 using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
 using Octopus.Server.App.Processing;
@@ -22,7 +22,7 @@ using DomainProcessingStatus = Octopus.Server.Domain.Enums.ProcessingStatus;
 // FileKind: _0=Source, _1=Artifact
 // FileCategory: _0=Ifc, _1=WexBim, _2=Properties, _3=Other
 
-namespace Octopus.Client.Tests.Integration;
+namespace Octopus.Api.Client.Tests.Integration;
 
 /// <summary>
 /// Integration tests using the generated API client to test the full pipeline:

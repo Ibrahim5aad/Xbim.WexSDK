@@ -8,7 +8,7 @@ An open-source SDK and scaffold for building BIM (Building Information Modeling)
 | Package | NuGet |
 |---------|-------|
 | Octopus.Blazor | [![NuGet](https://img.shields.io/nuget/v/Octopus.Blazor.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Blazor/) |
-| Octopus.Client | [![NuGet](https://img.shields.io/nuget/v/Octopus.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Client/) |
+| Octopus.Api.Client | [![NuGet](https://img.shields.io/nuget/v/Octopus.Api.Client.svg?style=flat-square)](https://www.nuget.org/packages/Octopus.Api.Client/) |
 
 ![Octopus Viewer](screenshot.png)
 
@@ -38,7 +38,7 @@ Choose **Standalone** mode when you need a lightweight viewer without server inf
 Octopus/
 ├── src/
 │   ├── Octopus.Blazor                          # Blazor component library (NuGet package)
-│   ├── Octopus.Client                          # Generated API client (NuGet package)
+│   ├── Octopus.Api.Client                          # Generated API client (NuGet package)
 │   ├── Octopus.Web                             # Blazor Server web application
 │   ├── Octopus.Server.App                      # ASP.NET Core REST API
 │   ├── Octopus.Server.Domain                   # Domain entities
@@ -128,7 +128,7 @@ For full BIM applications with model management, storage, and collaboration:
 
 ```bash
 dotnet add package Octopus.Blazor
-dotnet add package Octopus.Client
+dotnet add package Octopus.Api.Client
 ```
 
 Register services in `Program.cs`:
@@ -312,7 +312,7 @@ dotnet run --project samples/Octopus.Blazor.Server.Sample
 ## Documentation
 
 - [Octopus.Blazor Component Library](src/Octopus.Blazor/README.md)
-- [Octopus.Client API Client](src/Octopus.Client/README.md)
+- [Octopus.Api.Client API Client](src/Octopus.Api.Client/README.md)
 
 ## Technology Stack
 

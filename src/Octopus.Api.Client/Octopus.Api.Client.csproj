@@ -4,9 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Octopus.Client</RootNamespace>
-    <AssemblyName>Octopus.Client</AssemblyName>
-    <PackageId>Octopus.Client</PackageId>
+    <RootNamespace>Octopus.Api.Client</RootNamespace>
+    <AssemblyName>Octopus.Api.Client</AssemblyName>
+    <PackageId>Octopus.Api.Client</PackageId>
     <Version>1.7.0</Version>
     <Authors>Ibrahim Saad</Authors>
     <Company>Ibrahim Saad</Company>

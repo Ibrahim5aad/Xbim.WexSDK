@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace Octopus.Client;
+namespace Octopus.Api.Client;
 
 /// <summary>
 /// A DelegatingHandler that automatically attaches Bearer tokens to HTTP requests.
