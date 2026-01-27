@@ -7,8 +7,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Octopus.Client;
 using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
+using Octopus.Server.App.Processing;
 using Octopus.Server.Domain.Entities;
 using Octopus.Server.Persistence.EfCore;
+using Octopus.Server.Processing;
 using Xunit;
 using DomainFileKind = Octopus.Server.Domain.Enums.FileKind;
 using DomainFileCategory = Octopus.Server.Domain.Enums.FileCategory;
@@ -489,4 +491,222 @@ public class TestProcessingQueue : IProcessingQueue
         }
         return ValueTask.FromResult<JobEnvelope?>(null);
     }
+}
+
+/// <summary>
+/// Real end-to-end integration tests that actually run the xBIM processing.
+/// These tests use the real ProcessingWorkerService to convert IFC to WexBIM.
+/// </summary>
+[Collection("RealProcessing")]
+public class RealWexBimProcessingTests : IDisposable
+{
+    private readonly WebApplicationFactory<Program> _factory;
+    private readonly HttpClient _httpClient;
+    private readonly OctopusApiClient _apiClient;
+    private readonly string _testDbName;
+    private readonly InMemoryStorageProvider _storageProvider;
+
+    private static readonly string TestFilesPath = Path.Combine(
+        AppContext.BaseDirectory, "Integration", "TestFiles");
+
+    public RealWexBimProcessingTests()
+    {
+        _testDbName = $"real_processing_test_{Guid.NewGuid()}";
+        _storageProvider = new InMemoryStorageProvider();
+
+        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+
+            builder.ConfigureServices(services =>
+            {
+                // Remove ALL DbContext-related services
+                services.RemoveAll(typeof(DbContextOptions<OctopusDbContext>));
+                services.RemoveAll(typeof(DbContextOptions));
+                services.RemoveAll(typeof(OctopusDbContext));
+
+                // Use in-memory storage
+                services.RemoveAll(typeof(IStorageProvider));
+                services.AddSingleton<IStorageProvider>(_storageProvider);
+
+                // Add in-memory database for testing
+                services.AddDbContext<OctopusDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase(_testDbName);
+                });
+
+                // Add the real processing services (since Testing env skips them)
+                // This enables the ProcessingWorkerService to run real xBIM processing
+                services.AddInMemoryProcessing(processing =>
+                {
+                    processing.AddHandler<IfcToWexBimJobPayload, IfcToWexBimJobHandler>(IfcToWexBimJobHandler.JobTypeName);
+                    processing.AddHandler<ExtractPropertiesJobPayload, ExtractPropertiesJobHandler>(ExtractPropertiesJobHandler.JobTypeName);
+                });
+            });
+        });
+
+        _httpClient = _factory.CreateClient();
+        _apiClient = new OctopusApiClient(_httpClient.BaseAddress!.ToString(), _httpClient);
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        _factory.Dispose();
+    }
+
+    /// <summary>
+    /// Real end-to-end test that uploads an IFC file and waits for actual xBIM processing.
+    /// This test:
+    /// 1. Creates workspace/project/model via API
+    /// 2. Uploads a real IFC file
+    /// 3. Creates a model version (queues processing job)
+    /// 4. Waits for the ProcessingWorkerService to actually convert IFC to WexBIM
+    /// 5. Downloads and verifies the generated WexBIM
+    /// </summary>
+    [Fact]
+    public async Task RealProcessing_UploadIfc_GeneratesWexBim()
+    {
+        // Arrange - Load real IFC file
+        var ifcFilePath = Path.Combine(TestFilesPath, "SampleHouse.ifc");
+        Assert.True(File.Exists(ifcFilePath), $"Test file not found: {ifcFilePath}");
+        var ifcContent = await File.ReadAllBytesAsync(ifcFilePath);
+
+        // Step 1: Create workspace
+        var workspace = await _apiClient.CreateWorkspaceAsync(new CreateWorkspaceRequest
+        {
+            Name = "Real Processing Test Workspace"
+        });
+        Assert.NotNull(workspace);
+
+        // Step 2: Create project
+        var project = await _apiClient.CreateProjectAsync(workspace.Id!.Value, new CreateProjectRequest
+        {
+            Name = "Real Processing Test Project"
+        });
+        Assert.NotNull(project);
+
+        // Step 3: Upload IFC file
+        var uploadedFile = await UploadFileAsync(project.Id!.Value, "SampleHouse.ifc", "application/x-step", ifcContent);
+        Assert.NotNull(uploadedFile);
+        Assert.Equal("SampleHouse.ifc", uploadedFile.Name);
+
+        // Step 4: Create model
+        var model = await _apiClient.CreateModelAsync(project.Id!.Value, new CreateModelRequest
+        {
+            Name = "Real Processing Test Model"
+        });
+        Assert.NotNull(model);
+
+        // Step 5: Create model version - this triggers processing
+        var version = await _apiClient.CreateModelVersionAsync(model.Id!.Value, new CreateModelVersionRequest
+        {
+            IfcFileId = uploadedFile.Id
+        });
+        Assert.NotNull(version);
+        Assert.Equal(ProcessingStatus._0 /* Pending */, version.Status);
+
+        // Step 6: Wait for processing to complete (real xBIM processing)
+        var processedVersion = await WaitForProcessingAsync(version.Id!.Value, timeoutSeconds: 60);
+
+        // Step 7: Verify processing succeeded
+        Assert.Equal(ProcessingStatus._2 /* Ready */, processedVersion.Status);
+        Assert.NotNull(processedVersion.WexBimFileId);
+        Assert.NotNull(processedVersion.ProcessedAt);
+        Assert.Null(processedVersion.ErrorMessage);
+
+        // Step 8: Download and verify WexBIM
+        var wexBimResponse = await _apiClient.GetModelVersionWexBimAsync(version.Id!.Value);
+        Assert.NotNull(wexBimResponse);
+        Assert.NotNull(wexBimResponse.Stream);
+
+        using var memoryStream = new MemoryStream();
+        await wexBimResponse.Stream.CopyToAsync(memoryStream);
+        var wexbimContent = memoryStream.ToArray();
+
+        // WexBIM should have reasonable size (the sample file generates ~300KB)
+        Assert.True(wexbimContent.Length > 100, $"WexBIM file too small: {wexbimContent.Length} bytes");
+        Assert.True(wexbimContent.Length < 10_000_000, $"WexBIM file unexpectedly large: {wexbimContent.Length} bytes");
+    }
+
+    /// <summary>
+    /// Test that processing handles errors gracefully when IFC file is invalid.
+    /// </summary>
+    [Fact]
+    public async Task RealProcessing_InvalidIfc_SetsStatusToFailed()
+    {
+        // Arrange - Create an invalid IFC file (just some text)
+        var invalidIfcContent = System.Text.Encoding.UTF8.GetBytes("This is not a valid IFC file");
+
+        var workspace = await _apiClient.CreateWorkspaceAsync(new CreateWorkspaceRequest
+        {
+            Name = "Invalid IFC Test Workspace"
+        });
+        var project = await _apiClient.CreateProjectAsync(workspace.Id!.Value, new CreateProjectRequest
+        {
+            Name = "Invalid IFC Test Project"
+        });
+        var uploadedFile = await UploadFileAsync(project.Id!.Value, "invalid.ifc", "application/x-step", invalidIfcContent);
+        var model = await _apiClient.CreateModelAsync(project.Id!.Value, new CreateModelRequest
+        {
+            Name = "Invalid IFC Test Model"
+        });
+
+        // Act - Create model version with invalid IFC
+        var version = await _apiClient.CreateModelVersionAsync(model.Id!.Value, new CreateModelVersionRequest
+        {
+            IfcFileId = uploadedFile.Id
+        });
+
+        // Wait for processing to complete (should fail)
+        var processedVersion = await WaitForProcessingAsync(version.Id!.Value, timeoutSeconds: 30);
+
+        // Assert - Processing should fail gracefully
+        Assert.Equal(ProcessingStatus._3 /* Failed */, processedVersion.Status);
+        Assert.NotNull(processedVersion.ErrorMessage);
+        Assert.Null(processedVersion.WexBimFileId);
+    }
+
+    #region Helper Methods
+
+    private async Task<FileDto> UploadFileAsync(Guid projectId, string fileName, string contentType, byte[] content)
+    {
+        var reserved = await _apiClient.ReserveUploadAsync(projectId, new ReserveUploadRequest
+        {
+            FileName = fileName,
+            ContentType = contentType,
+            ExpectedSizeBytes = content.Length
+        });
+
+        var fileStream = new MemoryStream(content);
+        var fileParam = new FileParameter(fileStream, fileName, contentType);
+        await _apiClient.UploadContentAsync(projectId, reserved.Session!.Id!.Value, fileParam);
+
+        var commitResult = await _apiClient.CommitUploadAsync(projectId, reserved.Session!.Id!.Value);
+        return commitResult.File!;
+    }
+
+    private async Task<ModelVersionDto> WaitForProcessingAsync(Guid versionId, int timeoutSeconds)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var version = await _apiClient.GetModelVersionAsync(versionId);
+
+            // Check if processing is complete (Ready or Failed)
+            if (version.Status == ProcessingStatus._2 /* Ready */ ||
+                version.Status == ProcessingStatus._3 /* Failed */)
+            {
+                return version;
+            }
+
+            // Still processing, wait a bit
+            await Task.Delay(500);
+        }
+
+        throw new TimeoutException($"Processing did not complete within {timeoutSeconds} seconds");
+    }
+
+    #endregion
 }

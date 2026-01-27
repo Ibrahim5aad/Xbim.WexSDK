@@ -4,7 +4,6 @@
 
 ## Documentation - local only, not tracked
 docs/*
-!docs/claude-progress.txt
 
 ## Node.js
 node_modules/

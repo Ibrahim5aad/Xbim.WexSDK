@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Contracts;
 using Octopus.Server.Domain.Entities;
 using Octopus.Server.Persistence.EfCore;
@@ -18,10 +19,12 @@ public class WorkspaceEndpointsTests : IDisposable
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
     private readonly string _testDbName;
+    private readonly TestInMemoryProcessingQueue _processingQueue;
 
     public WorkspaceEndpointsTests()
     {
         _testDbName = $"test_{Guid.NewGuid()}";
+        _processingQueue = new TestInMemoryProcessingQueue();
 
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -33,6 +36,10 @@ public class WorkspaceEndpointsTests : IDisposable
                 services.RemoveAll(typeof(DbContextOptions<OctopusDbContext>));
                 services.RemoveAll(typeof(DbContextOptions));
                 services.RemoveAll(typeof(OctopusDbContext));
+
+                // Remove processing queue and add in-memory one
+                services.RemoveAll(typeof(IProcessingQueue));
+                services.AddSingleton<IProcessingQueue>(_processingQueue);
 
                 // Add in-memory database for testing
                 services.AddDbContext<OctopusDbContext>(options =>
@@ -208,6 +215,8 @@ public class WorkspaceEndpointsTests : IDisposable
                 services.RemoveAll(typeof(DbContextOptions<OctopusDbContext>));
                 services.RemoveAll(typeof(DbContextOptions));
                 services.RemoveAll(typeof(OctopusDbContext));
+                services.RemoveAll(typeof(IProcessingQueue));
+                services.AddSingleton<IProcessingQueue>(new TestInMemoryProcessingQueue());
                 services.AddDbContext<OctopusDbContext>(options =>
                 {
                     options.UseInMemoryDatabase(dbName);

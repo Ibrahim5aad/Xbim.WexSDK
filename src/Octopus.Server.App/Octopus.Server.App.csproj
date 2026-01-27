@@ -34,4 +34,15 @@
     <ProjectReference Include="..\Octopus.Server.Processing\Octopus.Server.Processing.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="octopus-storage\5327311c41254f5fa96d276c48aa42c7\13fab7f042134474aace3e1fb582cc8b\uploads\6675ff625043446c8d57ec3ac1f5a35e\" />
+    <Folder Include="octopus-storage\5c12b8d3943a4fd9957ee713a48c938e\a01e47c53bb94b368e0b5e384186e11a\uploads\174afc997ea54103a822f6eddcb23c6c\" />
+    <Folder Include="octopus-storage\aae090f9ab8748d387e660a2cf9d6ae5\4bd9b7b3709a49c6a85bd0ca82036541\uploads\635e86f363fa472e850a122b0c97f14a\" />
+    <Folder Include="octopus-storage\e1d168ab9308450d900800176a5bac6e\26916266e25b4f52a49c7e40343b5b7d\uploads\c0bed24a3ee94b658fd54a6fba88e2a9\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="octopus-storage\5c12b8d3943a4fd9957ee713a48c938e\a01e47c53bb94b368e0b5e384186e11a\uploads\174afc997ea54103a822f6eddcb23c6c\qZs99ohQwyLx8v_sKBIRYQ.ifc.meta" />
+  </ItemGroup>
+
 </Project>

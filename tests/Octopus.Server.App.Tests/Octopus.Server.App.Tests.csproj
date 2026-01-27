@@ -26,4 +26,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Copy test files to output directory -->
+  <ItemGroup>
+    <None Include="TestFiles\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

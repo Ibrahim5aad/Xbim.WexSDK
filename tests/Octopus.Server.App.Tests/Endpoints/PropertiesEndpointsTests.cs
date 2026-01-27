@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
 using Octopus.Server.Contracts;
 using Octopus.Server.Domain.Entities;
@@ -66,11 +67,13 @@ public class PropertiesEndpointsTests : IDisposable
     private readonly HttpClient _client;
     private readonly string _testDbName;
     private readonly InMemoryStorageProviderForPropertiesTests _storageProvider;
+    private readonly TestInMemoryProcessingQueue _processingQueue;
 
     public PropertiesEndpointsTests()
     {
         _testDbName = $"test_{Guid.NewGuid()}";
         _storageProvider = new InMemoryStorageProviderForPropertiesTests();
+        _processingQueue = new TestInMemoryProcessingQueue();
 
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -86,6 +89,10 @@ public class PropertiesEndpointsTests : IDisposable
                 // Remove storage provider and add in-memory one
                 services.RemoveAll(typeof(IStorageProvider));
                 services.AddSingleton<IStorageProvider>(_storageProvider);
+
+                // Remove processing queue and add in-memory one
+                services.RemoveAll(typeof(IProcessingQueue));
+                services.AddSingleton<IProcessingQueue>(_processingQueue);
 
                 // Add in-memory database for testing
                 services.AddDbContext<OctopusDbContext>(options =>
