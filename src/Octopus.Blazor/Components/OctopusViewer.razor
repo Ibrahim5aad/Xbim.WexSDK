@@ -7,9 +7,9 @@
 @inject IJSRuntime JSRuntime
 
 <CascadingValue Value="this" IsFixed="false">
-    <div class="octopus-viewer-container" style="@ContainerStyle">
+    <div @ref="_containerRef" class="octopus-viewer-container" style="@ComputedContainerStyle">
         <div class="octopus-canvas-wrapper">
-            <canvas id="@Id" width="@Width" height="@Height"></canvas>
+            <canvas id="@Id"></canvas>
         </div>
         @ChildContent
     </div>
@@ -25,12 +25,30 @@
     private readonly Dictionary<int, LoadedModel> _loadedModels = new();
     private readonly Dictionary<string, ViewerPlugin> _plugins = new();
     private readonly HashSet<(int ElementId, int ModelId)> _highlightedElements = new();
-    
+    private ElementReference _containerRef;
+
     public int[] HighlightedElementIds => _highlightedElements.Select(e => e.ElementId).ToArray();
     public IReadOnlyCollection<(int ElementId, int ModelId)> HighlightedElements => _highlightedElements;
     public bool HasHighlightedElements => _highlightedElements.Count > 0;
-    
+
     public event Action? SelectionChanged;
+
+    private string ComputedContainerStyle
+    {
+        get
+        {
+            var style = ContainerStyle ?? "position: relative;";
+            if (!style.Contains("width", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Width))
+            {
+                style += $" width: {Width};";
+            }
+            if (!style.Contains("height", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(Height))
+            {
+                style += $" height: {Height};";
+            }
+            return style;
+        }
+    }
     
     /// <summary>
     /// Unique ID for the viewer canvas

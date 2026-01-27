@@ -43,6 +43,8 @@ declare global {
 const viewerInstances = new Map<string, XbimViewer>();
 const eventHandlers = new Map<string, Map<string, any>>(); // viewerId -> eventName -> handler
 const loadedModels = new Map<string, Map<number, any>>(); // viewerId -> modelId -> modelInfo
+const resizeObservers = new Map<string, ResizeObserver>(); // viewerId -> ResizeObserver
+const viewerCanvasMap = new Map<string, string>(); // viewerId -> canvasId
 let viewerIdCounter = 0;
 let ViewerCtor: any = null;
 let xbimModule: any = null;
@@ -80,31 +82,112 @@ function loadXbimViewer(scriptUrl = XBIM_SCRIPT_PATH): Promise<void> {
 export async function initViewer(canvasId: string): Promise<string | null> {
     try {
         await loadXbimViewer();
-        const canvas = document.getElementById(canvasId);
+        const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         if (!canvas) {
             console.error(`Canvas element with id ${canvasId} not found`);
             return null;
         }
-        
+
         if (!ViewerCtor) {
             console.error("Viewer class is not defined. xBIM library may not be properly loaded.");
             return null;
         }
-        
+
+        // Set initial canvas size based on container
+        resizeCanvas(canvasId);
+
         const viewer = new ViewerCtor(canvasId, (message: string) => {
             console.error(message);
         });
         viewer.background = [0, 0, 0, 0];
         viewer.highlightingColour = [72, 73, 208, 255];
         viewer.hoverPickEnabled = true;
-        
+
         const viewerId = `viewer_${viewerIdCounter++}`;
         viewerInstances.set(viewerId, viewer);
+        viewerCanvasMap.set(viewerId, canvasId);
+
+        // Setup resize observer to handle container size changes
+        setupResizeObserver(canvasId, viewerId);
+
         return viewerId;
     } catch (error) {
         console.error('Error initializing xBIM Viewer:', error);
         return null;
     }
+}
+
+// Resize the canvas buffer to match its display size
+export function resizeCanvas(canvasId: string): boolean {
+    try {
+        const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+        if (!canvas) {
+            console.error(`Canvas element with id ${canvasId} not found`);
+            return false;
+        }
+
+        // Get the display size from CSS
+        const rect = canvas.getBoundingClientRect();
+        const displayWidth = Math.floor(rect.width);
+        const displayHeight = Math.floor(rect.height);
+
+        // Use devicePixelRatio for high-DPI displays
+        const dpr = window.devicePixelRatio || 1;
+        const bufferWidth = Math.floor(displayWidth * dpr);
+        const bufferHeight = Math.floor(displayHeight * dpr);
+
+        // Only resize if dimensions have changed
+        if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
+            canvas.width = bufferWidth;
+            canvas.height = bufferHeight;
+            console.log(`Canvas ${canvasId} resized to ${bufferWidth}x${bufferHeight} (display: ${displayWidth}x${displayHeight}, dpr: ${dpr})`);
+            return true;
+        }
+
+        return false;
+    } catch (error) {
+        console.error('Error resizing canvas:', error);
+        return false;
+    }
+}
+
+// Setup a ResizeObserver to automatically resize the canvas when its container changes
+function setupResizeObserver(canvasId: string, viewerId: string): void {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Get the wrapper element (parent of canvas)
+    const wrapper = canvas.parentElement;
+    if (!wrapper) return;
+
+    // Clean up any existing observer for this viewer
+    const existingObserver = resizeObservers.get(viewerId);
+    if (existingObserver) {
+        existingObserver.disconnect();
+    }
+
+    const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            // Resize the canvas buffer
+            const resized = resizeCanvas(canvasId);
+
+            // If resized, trigger a redraw on the viewer
+            if (resized) {
+                const viewer = viewerInstances.get(viewerId);
+                if (viewer) {
+                    try {
+                        viewer.draw();
+                    } catch (e) {
+                        // Viewer might not be ready yet
+                    }
+                }
+            }
+        }
+    });
+
+    observer.observe(wrapper);
+    resizeObservers.set(viewerId, observer);
+    console.log(`ResizeObserver set up for viewer ${viewerId} (canvas ${canvasId})`);
 }
 
 // Load a model from a URL with optional tag for identification
@@ -1144,7 +1227,18 @@ export function disposeViewer(viewerId: string): boolean {
             console.error(`Viewer with id ${viewerId} not found`);
             return false;
         }
-        
+
+        // Clean up the resize observer for this viewer
+        const observer = resizeObservers.get(viewerId);
+        if (observer) {
+            observer.disconnect();
+            resizeObservers.delete(viewerId);
+            console.log(`ResizeObserver cleaned up for viewer ${viewerId}`);
+        }
+
+        // Clean up the canvas ID mapping
+        viewerCanvasMap.delete(viewerId);
+
         // Remove all event handlers
         const handlers = eventHandlers.get(viewerId);
         if (handlers) {
@@ -1153,7 +1247,7 @@ export function disposeViewer(viewerId: string): boolean {
             });
             eventHandlers.delete(viewerId);
         }
-        
+
         // Remove all plugins
         const plugins = pluginInstances.get(viewerId);
         if (plugins) {
@@ -1162,16 +1256,16 @@ export function disposeViewer(viewerId: string): boolean {
             });
             pluginInstances.delete(viewerId);
         }
-        
+
         // Clear loaded models tracking
         loadedModels.delete(viewerId);
-        
+
         // Stop the rendering loop
         viewer.stop();
-        
+
         // Remove from our map
         viewerInstances.delete(viewerId);
-        
+
         return true;
     } catch (error) {
         console.error('Error disposing viewer:', error);

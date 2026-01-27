@@ -5,6 +5,8 @@
     padding: 0;
     overflow: hidden;
     position: relative;
+    min-width: 100px;
+    min-height: 100px;
 }
 
 .octopus-canvas-wrapper {
@@ -17,6 +19,7 @@
 }
 
 canvas {
+    display: block;
     width: 100%;
     height: 100%;
 } 
