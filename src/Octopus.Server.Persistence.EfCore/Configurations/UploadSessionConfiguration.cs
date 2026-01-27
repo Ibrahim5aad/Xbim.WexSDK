@@ -43,10 +43,12 @@ public class UploadSessionConfiguration : IEntityTypeConfiguration<UploadSession
             .OnDelete(DeleteBehavior.Cascade);
 
         // Relationship to committed File (optional)
+        // Use NoAction to avoid multiple cascade paths in SQL Server
+        // (Project -> Files cascade conflicts with Project -> UploadSessions -> Files path)
         builder.HasOne(us => us.CommittedFile)
             .WithMany()
             .HasForeignKey(us => us.CommittedFileId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // Indexes
         builder.HasIndex(us => us.ProjectId);

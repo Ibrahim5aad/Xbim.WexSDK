@@ -751,12 +751,12 @@ namespace Octopus.Server.Persistence.EfCore.Migrations
                     b.HasOne("Octopus.Server.Domain.Entities.FileEntity", "PropertiesFile")
                         .WithMany()
                         .HasForeignKey("PropertiesFileId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Octopus.Server.Domain.Entities.FileEntity", "WexBimFile")
                         .WithMany()
                         .HasForeignKey("WexBimFileId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("IfcFile");
 
@@ -802,7 +802,7 @@ namespace Octopus.Server.Persistence.EfCore.Migrations
                     b.HasOne("Octopus.Server.Domain.Entities.FileEntity", "CommittedFile")
                         .WithMany()
                         .HasForeignKey("CommittedFileId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Octopus.Server.Domain.Entities.Project", "Project")
                         .WithMany("UploadSessions")

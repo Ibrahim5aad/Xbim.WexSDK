@@ -249,8 +249,7 @@ namespace Octopus.Server.Persistence.EfCore.Migrations
                         name: "FK_UploadSessions_Files_CommittedFileId",
                         column: x => x.CommittedFileId,
                         principalTable: "Files",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_UploadSessions_Projects_ProjectId",
                         column: x => x.ProjectId,
@@ -287,14 +286,12 @@ namespace Octopus.Server.Persistence.EfCore.Migrations
                         name: "FK_ModelVersions_Files_PropertiesFileId",
                         column: x => x.PropertiesFileId,
                         principalTable: "Files",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ModelVersions_Files_WexBimFileId",
                         column: x => x.WexBimFileId,
                         principalTable: "Files",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ModelVersions_Models_ModelId",
                         column: x => x.ModelId,

@@ -39,16 +39,19 @@ public class ModelVersionConfiguration : IEntityTypeConfiguration<ModelVersion>
             .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete - preserve file if version deleted
 
         // Relationship to WexBIM File (optional artifact)
+        // Use NoAction to avoid multiple cascade paths in SQL Server
+        // (Project -> Files cascade conflicts with Project -> Models -> Versions -> Files path)
         builder.HasOne(v => v.WexBimFile)
             .WithMany()
             .HasForeignKey(v => v.WexBimFileId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // Relationship to Properties File (optional artifact)
+        // Use NoAction to avoid multiple cascade paths in SQL Server
         builder.HasOne(v => v.PropertiesFile)
             .WithMany()
             .HasForeignKey(v => v.PropertiesFileId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // Indexes
         builder.HasIndex(v => v.ModelId);
