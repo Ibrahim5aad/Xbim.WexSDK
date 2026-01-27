@@ -41,11 +41,12 @@ public static class ServiceCollectionExtensions
             throw new ArgumentException("BaseUrl must be configured.", nameof(configureOptions));
 
         var tokenProvider = options.GetEffectiveTokenProvider();
+        var baseUrl = options.BaseUrl;
 
         // Register the HttpClient with the auth handler if a token provider is configured
-        services.AddHttpClient<IOctopusApiClient, OctopusApiClient>(client =>
+        var httpClientBuilder = services.AddHttpClient("OctopusApiClient", client =>
         {
-            client.BaseAddress = new Uri(options.BaseUrl);
+            client.BaseAddress = new Uri(baseUrl);
         })
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler())
         .AddHttpMessageHandler(() =>
@@ -53,6 +54,14 @@ public static class ServiceCollectionExtensions
             // Use the token provider if configured, otherwise use a no-op provider
             var provider = tokenProvider ?? new StaticTokenProvider(null);
             return new AuthorizationDelegatingHandler(provider);
+        });
+
+        // Register IOctopusApiClient with a factory that provides the baseUrl parameter
+        services.TryAddTransient<IOctopusApiClient>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient("OctopusApiClient");
+            return new OctopusApiClient(baseUrl, httpClient);
         });
 
         // Register the token provider if provided
@@ -64,8 +73,9 @@ public static class ServiceCollectionExtensions
         // Register the factory
         services.TryAddSingleton<IOctopusClientFactory>(sp =>
         {
-            var client = sp.GetRequiredService<HttpClient>();
-            return new OctopusClientFactory(client, options.BaseUrl);
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient("OctopusApiClient");
+            return new OctopusClientFactory(httpClient, baseUrl);
         });
 
         return services;
