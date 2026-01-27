@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Octopus.Server.Abstractions.Auth;
 using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
@@ -14,8 +15,10 @@ using Xbim.Common.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-XbimServices.Current.ConfigureServices(s => 
-    s.AddXbimToolkit(c => c.AddGeometryServices()));
+var loggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Warning));
+XbimServices.Current.ConfigureServices(s => s.AddXbimToolkit(c => c
+    .AddLoggerFactory(loggerFactory)
+    .AddGeometryServices()));
 
 // Add service defaults (OpenTelemetry, health checks, resilience)
 builder.AddServiceDefaults();
