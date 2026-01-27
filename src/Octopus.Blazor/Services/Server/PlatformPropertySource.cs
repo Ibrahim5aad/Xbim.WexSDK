@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using Octopus.Blazor.Models;
-using Octopus.Client;
+using Octopus.Api.Client;
 
 namespace Octopus.Blazor.Services.Server;
 

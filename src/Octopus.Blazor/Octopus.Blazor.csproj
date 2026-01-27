@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Octopus.Client\Octopus.Client.csproj" />
+    <ProjectReference Include="..\Octopus.Api.Client\Octopus.Api.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

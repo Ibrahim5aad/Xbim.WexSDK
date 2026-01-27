@@ -25,6 +25,10 @@ public class OctopusDbContext : DbContext
     public DbSet<Model> Models => Set<Model>();
     public DbSet<ModelVersion> ModelVersions => Set<ModelVersion>();
 
+    // OAuth Apps
+    public DbSet<OAuthApp> OAuthApps => Set<OAuthApp>();
+    public DbSet<OAuthAppAuditLog> OAuthAppAuditLogs => Set<OAuthAppAuditLog>();
+
     // IFC Properties
     public DbSet<IfcElement> IfcElements => Set<IfcElement>();
     public DbSet<IfcPropertySet> IfcPropertySets => Set<IfcPropertySet>();

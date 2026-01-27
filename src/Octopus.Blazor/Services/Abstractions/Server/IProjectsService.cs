@@ -1,4 +1,4 @@
-using Octopus.Client;
+using Octopus.Api.Client;
 
 namespace Octopus.Blazor.Services.Abstractions.Server;
 
