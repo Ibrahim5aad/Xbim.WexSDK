@@ -1,8 +1,6 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Add SQL Server database
-// Note: For development, we use non-persistent container for clean state on restart.
-// Add .WithLifetime(ContainerLifetime.Persistent) to retain data between runs.
 var sqlServer = builder.AddSqlServer("sql");
 
 var database = sqlServer.AddDatabase("OctopusDb");
