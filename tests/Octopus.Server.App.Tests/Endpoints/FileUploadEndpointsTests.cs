@@ -61,6 +61,13 @@ public class InMemoryStorageProvider : IStorageProvider
         }
         return Task.FromResult<long?>(null);
     }
+
+    public bool SupportsDirectUpload => false;
+
+    public Task<string?> GenerateUploadSasUrlAsync(string key, string? contentType, DateTimeOffset expiresAt, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<string?>(null);
+    }
 }
 
 public class FileUploadEndpointsTests : IDisposable
@@ -1109,6 +1116,52 @@ public class FileUploadEndpointsTests : IDisposable
 
         Assert.NotNull(session);
         Assert.Equal(result!.File.Id, session.CommittedFileId);
+    }
+
+    [Fact]
+    public async Task ReserveUpload_WithPreferDirectUpload_ReturnsServerProxyMode_WhenProviderDoesNotSupport()
+    {
+        // Arrange - Default InMemoryStorageProvider does not support direct upload
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+
+        // Act
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/projects/{project.Id}/files/uploads",
+            new ReserveUploadRequest
+            {
+                FileName = "test.ifc",
+                ContentType = "application/octet-stream",
+                PreferDirectUpload = true
+            });
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<ReserveUploadResponse>();
+
+        // Assert - should fall back to ServerProxy mode since provider doesn't support direct upload
+        Assert.NotNull(result);
+        Assert.NotNull(result.Session);
+        Assert.Equal(UploadMode.ServerProxy, result.Session.UploadMode);
+        Assert.Null(result.Session.UploadUrl);
+    }
+
+    [Fact]
+    public async Task CommitUpload_RejectsReservedSession_WhenNotDirectUploadMode()
+    {
+        // Arrange
+        var workspace = await CreateWorkspaceAsync();
+        var project = await CreateProjectAsync(workspace.Id);
+        var reserved = await ReserveUploadAsync(project.Id);
+
+        // Do not upload content - session is still in Reserved status
+
+        // Act - Try to commit without uploading content
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/projects/{project.Id}/files/uploads/{reserved.Session.Id}/commit",
+            new CommitUploadRequest());
+
+        // Assert - should reject because it's ServerProxy mode and no content uploaded
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     #endregion

@@ -466,6 +466,13 @@ public class InMemoryStorageProvider : IStorageProvider
         }
         return Task.FromResult<long?>(null);
     }
+
+    public bool SupportsDirectUpload => false;
+
+    public Task<string?> GenerateUploadSasUrlAsync(string key, string? contentType, DateTimeOffset expiresAt, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<string?>(null);
+    }
 }
 
 /// <summary>

@@ -78,6 +78,22 @@ public enum UploadSessionStatus
 }
 
 /// <summary>
+/// Specifies how file content is uploaded to storage.
+/// </summary>
+public enum UploadMode
+{
+    /// <summary>
+    /// Content is uploaded through the server (server-proxy mode).
+    /// </summary>
+    ServerProxy = 0,
+
+    /// <summary>
+    /// Content is uploaded directly to storage using a SAS URL (direct-to-blob mode).
+    /// </summary>
+    DirectToBlob = 1
+}
+
+/// <summary>
 /// Represents an upload session for chunked/resumable uploads.
 /// </summary>
 public record UploadSessionDto
@@ -88,6 +104,7 @@ public record UploadSessionDto
     public string? ContentType { get; init; }
     public long? ExpectedSizeBytes { get; init; }
     public UploadSessionStatus Status { get; init; }
+    public UploadMode UploadMode { get; init; }
     public string? UploadUrl { get; init; }
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset ExpiresAt { get; init; }
@@ -98,6 +115,12 @@ public record ReserveUploadRequest
     public string FileName { get; init; } = string.Empty;
     public string? ContentType { get; init; }
     public long? ExpectedSizeBytes { get; init; }
+
+    /// <summary>
+    /// If true, requests direct-to-blob upload mode with a SAS URL.
+    /// Falls back to server-proxy mode if direct upload is not supported.
+    /// </summary>
+    public bool PreferDirectUpload { get; init; }
 }
 
 public record CommitUploadRequest

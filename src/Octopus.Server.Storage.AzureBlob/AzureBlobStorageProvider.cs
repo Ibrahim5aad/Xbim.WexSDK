@@ -2,6 +2,7 @@ using Azure;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Octopus.Server.Abstractions.Storage;
@@ -29,6 +30,8 @@ public class AzureBlobStorageProvider : IStorageProvider
     }
 
     public string ProviderId => "AzureBlob";
+
+    public bool SupportsDirectUpload => !string.IsNullOrEmpty(_options.ConnectionString);
 
     private BlobContainerClient CreateContainerClient()
     {
@@ -195,5 +198,55 @@ public class AzureBlobStorageProvider : IStorageProvider
         {
             return null;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> GenerateUploadSasUrlAsync(
+        string key,
+        string? contentType,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken = default)
+    {
+        // SAS URL generation requires connection string authentication
+        // Managed identity does not support user delegation SAS without additional setup
+        if (string.IsNullOrEmpty(_options.ConnectionString))
+        {
+            _logger.LogDebug("SAS URL generation not supported without connection string");
+            return null;
+        }
+
+        await EnsureContainerExistsAsync(cancellationToken);
+
+        var blobClient = _containerClient.GetBlobClient(key);
+
+        // Check if the blob client can generate SAS
+        if (!blobClient.CanGenerateSasUri)
+        {
+            _logger.LogWarning("Blob client cannot generate SAS URI for {BlobName}", key);
+            return null;
+        }
+
+        // Build SAS with write-only permissions
+        var sasBuilder = new BlobSasBuilder
+        {
+            BlobContainerName = _options.ContainerName,
+            BlobName = key,
+            Resource = "b", // blob resource
+            ExpiresOn = expiresAt
+        };
+
+        // Set permissions: Create and Write only (no read, delete, or list)
+        sasBuilder.SetPermissions(BlobSasPermissions.Create | BlobSasPermissions.Write);
+
+        // Set content type header if provided
+        if (!string.IsNullOrEmpty(contentType))
+        {
+            sasBuilder.ContentType = contentType;
+        }
+
+        var sasUri = blobClient.GenerateSasUri(sasBuilder);
+        _logger.LogDebug("Generated SAS URI for blob {BlobName}, expires at {ExpiresAt}", key, expiresAt);
+
+        return sasUri.ToString();
     }
 }

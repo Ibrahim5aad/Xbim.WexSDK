@@ -31,6 +31,8 @@ public class LocalDiskStorageProvider : IStorageProvider
 
     public string ProviderId => "LocalDisk";
 
+    public bool SupportsDirectUpload => false;
+
     private void EnsureDirectoryExists(string filePath)
     {
         var directory = Path.GetDirectoryName(filePath);
@@ -199,5 +201,17 @@ public class LocalDiskStorageProvider : IStorageProvider
 
         var fileInfo = new FileInfo(fullPath);
         return Task.FromResult<long?>(fileInfo.Length);
+    }
+
+    /// <inheritdoc />
+    public Task<string?> GenerateUploadSasUrlAsync(
+        string key,
+        string? contentType,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken = default)
+    {
+        // Local disk storage does not support direct uploads via SAS URLs
+        _logger.LogDebug("Direct upload not supported for LocalDisk storage provider");
+        return Task.FromResult<string?>(null);
     }
 }

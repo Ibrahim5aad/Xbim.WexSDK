@@ -27,8 +27,14 @@ public class UploadSessionConfiguration : IEntityTypeConfiguration<UploadSession
         builder.Property(us => us.Status)
             .IsRequired();
 
+        builder.Property(us => us.UploadMode)
+            .IsRequired();
+
         builder.Property(us => us.TempStorageKey)
             .HasMaxLength(1000);
+
+        builder.Property(us => us.DirectUploadUrl)
+            .HasMaxLength(2000);
 
         builder.Property(us => us.CreatedAt)
             .IsRequired();

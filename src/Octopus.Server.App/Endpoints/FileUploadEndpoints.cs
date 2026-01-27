@@ -8,8 +8,10 @@ using Octopus.Server.Persistence.EfCore;
 
 using ProjectRole = Octopus.Server.Domain.Enums.ProjectRole;
 using DomainUploadSessionStatus = Octopus.Server.Domain.Enums.UploadSessionStatus;
+using DomainUploadMode = Octopus.Server.Domain.Enums.UploadMode;
 using FileKind = Octopus.Server.Contracts.FileKind;
 using FileCategory = Octopus.Server.Contracts.FileCategory;
+using UploadMode = Octopus.Server.Contracts.UploadMode;
 
 namespace Octopus.Server.App.Endpoints;
 
@@ -65,6 +67,7 @@ public static class FileUploadEndpoints
 
     /// <summary>
     /// Reserves an upload session for a file. Returns session ID and upload constraints.
+    /// If PreferDirectUpload is true and the storage provider supports it, returns a SAS URL for direct upload.
     /// Requires at least Editor role in the project.
     /// </summary>
     private static async Task<IResult> ReserveUpload(
@@ -73,6 +76,7 @@ public static class FileUploadEndpoints
         IUserContext userContext,
         IAuthorizationService authZ,
         OctopusDbContext dbContext,
+        IStorageProvider storageProvider,
         IConfiguration configuration,
         CancellationToken cancellationToken)
     {
@@ -128,6 +132,24 @@ public static class FileUploadEndpoints
         // Generate temp storage key
         var tempStorageKey = StorageKeyHelper.GenerateUploadKey(project.WorkspaceId, projectId, sessionId, fileExtension);
 
+        // Determine upload mode and generate SAS URL if requested and supported
+        var uploadMode = DomainUploadMode.ServerProxy;
+        string? directUploadUrl = null;
+
+        if (request.PreferDirectUpload && storageProvider.SupportsDirectUpload)
+        {
+            directUploadUrl = await storageProvider.GenerateUploadSasUrlAsync(
+                tempStorageKey,
+                request.ContentType?.Trim(),
+                expiresAt,
+                cancellationToken);
+
+            if (!string.IsNullOrEmpty(directUploadUrl))
+            {
+                uploadMode = DomainUploadMode.DirectToBlob;
+            }
+        }
+
         var session = new UploadSession
         {
             Id = sessionId,
@@ -136,7 +158,9 @@ public static class FileUploadEndpoints
             ContentType = request.ContentType?.Trim(),
             ExpectedSizeBytes = request.ExpectedSizeBytes,
             Status = DomainUploadSessionStatus.Reserved,
+            UploadMode = uploadMode,
             TempStorageKey = tempStorageKey,
+            DirectUploadUrl = directUploadUrl,
             CreatedAt = now,
             ExpiresAt = expiresAt
         };
@@ -344,27 +368,32 @@ public static class FileUploadEndpoints
             return Results.NotFound(new { error = "Not Found", message = "Upload session not found." });
         }
 
-        // Validate session status - must be Uploading (content has been uploaded)
-        if (session.Status != DomainUploadSessionStatus.Uploading)
+        // Validate session status
+        // For server-proxy mode: must be Uploading (content has been uploaded via server)
+        // For direct-to-blob mode: can be Reserved (content was uploaded directly to storage)
+        var isDirectUpload = session.UploadMode == DomainUploadMode.DirectToBlob;
+
+        if (session.Status == DomainUploadSessionStatus.Committed)
         {
-            if (session.Status == DomainUploadSessionStatus.Reserved)
+            return Results.BadRequest(new
             {
-                return Results.BadRequest(new
-                {
-                    error = "Invalid Session State",
-                    message = "Cannot commit session - no content has been uploaded yet."
-                });
-            }
+                error = "Invalid Session State",
+                message = "Upload session has already been committed."
+            });
+        }
 
-            if (session.Status == DomainUploadSessionStatus.Committed)
+        if (session.Status == DomainUploadSessionStatus.Reserved && !isDirectUpload)
+        {
+            return Results.BadRequest(new
             {
-                return Results.BadRequest(new
-                {
-                    error = "Invalid Session State",
-                    message = "Upload session has already been committed."
-                });
-            }
+                error = "Invalid Session State",
+                message = "Cannot commit session - no content has been uploaded yet. Use the upload content endpoint or request direct upload mode."
+            });
+        }
 
+        if (session.Status != DomainUploadSessionStatus.Reserved &&
+            session.Status != DomainUploadSessionStatus.Uploading)
+        {
             return Results.BadRequest(new
             {
                 error = "Invalid Session State",
@@ -486,6 +515,8 @@ public static class FileUploadEndpoints
             ContentType = session.ContentType,
             ExpectedSizeBytes = session.ExpectedSizeBytes,
             Status = (UploadSessionStatus)(int)session.Status,
+            UploadMode = (UploadMode)(int)session.UploadMode,
+            UploadUrl = session.DirectUploadUrl,
             CreatedAt = session.CreatedAt,
             ExpiresAt = session.ExpiresAt
         };

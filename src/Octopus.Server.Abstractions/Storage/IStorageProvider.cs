@@ -51,4 +51,23 @@ public interface IStorageProvider
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Size in bytes, or null if not found.</returns>
     Task<long?> GetSizeAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Generates a time-limited URL for direct client uploads (e.g., SAS URL for Azure Blob).
+    /// </summary>
+    /// <param name="key">The storage key where the upload should be written.</param>
+    /// <param name="contentType">Optional content type for the upload.</param>
+    /// <param name="expiresAt">When the upload URL should expire.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The upload URL, or null if direct uploads are not supported.</returns>
+    Task<string?> GenerateUploadSasUrlAsync(
+        string key,
+        string? contentType,
+        DateTimeOffset expiresAt,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Indicates whether this provider supports direct client uploads via SAS URLs.
+    /// </summary>
+    bool SupportsDirectUpload { get; }
 }
