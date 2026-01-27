@@ -51,20 +51,23 @@ jobs:
     - name: Compile TypeScript
       run: npx tsc --project src/Octopus.Blazor/tsconfig.json
     
-    - name: Update version in csproj
+    - name: Update version in csproj files
       run: |
         sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Blazor/Octopus.Blazor.csproj
+        sed -i 's/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.version }}<\/Version>/' src/Octopus.Client/Octopus.Client.csproj
         echo "Updated version to ${{ steps.get_version.outputs.version }}"
       shell: bash
-      
+
     - name: Build
       run: dotnet build --configuration Release --no-restore
-      
+
     - name: Run tests (if any)
       run: dotnet test --configuration Release --no-build --verbosity normal || echo "No tests found"
-      
-    - name: Pack NuGet package
-      run: dotnet pack src/Octopus.Blazor/Octopus.Blazor.csproj --configuration Release --no-build --output ./artifacts
+
+    - name: Pack NuGet packages
+      run: |
+        dotnet pack src/Octopus.Client/Octopus.Client.csproj --configuration Release --no-build --output ./artifacts
+        dotnet pack src/Octopus.Blazor/Octopus.Blazor.csproj --configuration Release --no-build --output ./artifacts
       
     - name: Push to NuGet.org
       if: startsWith(github.ref, 'refs/tags/')
@@ -83,11 +86,18 @@ jobs:
         files: ./artifacts/*.nupkg
         generate_release_notes: true
         body: |
-          ## 📦 NuGet Package
-          This release is available on [NuGet.org](https://www.nuget.org/packages/Octopus.Blazor/${{ steps.get_version.outputs.version }})
-          
+          ## 📦 NuGet Packages
+
+          ### Octopus.Blazor
+          [NuGet.org](https://www.nuget.org/packages/Octopus.Blazor/${{ steps.get_version.outputs.version }})
           ```bash
           dotnet add package Octopus.Blazor --version ${{ steps.get_version.outputs.version }}
+          ```
+
+          ### Octopus.Client
+          [NuGet.org](https://www.nuget.org/packages/Octopus.Client/${{ steps.get_version.outputs.version }})
+          ```bash
+          dotnet add package Octopus.Client --version ${{ steps.get_version.outputs.version }}
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,9 +105,10 @@ jobs:
     - name: Build Summary
       run: |
         if [ "${{ github.ref_type }}" == "tag" ]; then
-          echo "✅ Published version ${{ steps.get_version.outputs.version }} to NuGet.org"
+          echo "✅ Published Octopus.Blazor v${{ steps.get_version.outputs.version }} to NuGet.org"
+          echo "✅ Published Octopus.Client v${{ steps.get_version.outputs.version }} to NuGet.org"
           echo "✅ Created GitHub Release for v${{ steps.get_version.outputs.version }}"
         else
-          echo "✅ Build successful - Package created but NOT published (push a tag to publish)"
+          echo "✅ Build successful - Packages created but NOT published (push a tag to publish)"
         fi
       shell: bash
