@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Octopus.Server.Abstractions.Auth;
+using Octopus.Server.Abstractions.Processing;
 using Octopus.Server.Abstractions.Storage;
+using Octopus.Server.App.Processing;
 using Octopus.Server.Contracts;
 using Octopus.Server.Domain.Entities;
 using Octopus.Server.Persistence.EfCore;
+using Octopus.Server.Processing;
 
 using ProjectRole = Octopus.Server.Domain.Enums.ProjectRole;
 using DomainProcessingStatus = Octopus.Server.Domain.Enums.ProcessingStatus;
@@ -64,6 +67,7 @@ public static class ModelVersionEndpoints
         IUserContext userContext,
         IAuthorizationService authZ,
         OctopusDbContext dbContext,
+        IProcessingQueue processingQueue,
         CancellationToken cancellationToken)
     {
         if (!userContext.IsAuthenticated || !userContext.UserId.HasValue)
@@ -124,6 +128,12 @@ public static class ModelVersionEndpoints
 
         dbContext.ModelVersions.Add(version);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Enqueue the IFC to WexBIM conversion job
+        await processingQueue.EnqueueAsync(
+            IfcToWexBimJobHandler.JobTypeName,
+            new IfcToWexBimJobPayload { ModelVersionId = version.Id },
+            cancellationToken);
 
         var dto = MapToDto(version);
         return Results.Created($"/api/v1/modelversions/{version.Id}", dto);

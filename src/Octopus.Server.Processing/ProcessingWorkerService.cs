@@ -11,6 +11,11 @@ namespace Octopus.Server.Processing;
 /// </summary>
 public sealed class ProcessingWorkerService : BackgroundService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private readonly IProcessingQueue _queue;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IProcessedJobTracker _jobTracker;
@@ -104,8 +109,8 @@ public sealed class ProcessingWorkerService : BackgroundService
                 return;
             }
 
-            // Deserialize the payload
-            var payload = JsonSerializer.Deserialize(envelope.PayloadJson, registration.PayloadType);
+            // Deserialize the payload (using camelCase to match serialization in ProcessingQueueExtensions)
+            var payload = JsonSerializer.Deserialize(envelope.PayloadJson, registration.PayloadType, JsonOptions);
 
             if (payload is null)
             {

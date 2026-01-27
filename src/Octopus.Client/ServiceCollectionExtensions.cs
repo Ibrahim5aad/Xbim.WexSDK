@@ -62,6 +62,8 @@ public static class ServiceCollectionExtensions
         {
             // Increase attempt timeout for slower database operations during development
             options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(1);
+            // Circuit breaker sampling duration must be at least 2x the attempt timeout
+            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(2);
             // Increase total request timeout
             options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
         });
