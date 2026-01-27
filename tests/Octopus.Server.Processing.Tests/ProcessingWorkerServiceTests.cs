@@ -270,7 +270,10 @@ public class ProcessingWorkerServiceTests
             Version = 1
         };
         await queue.EnqueueAsync(envelope1);
-        await Task.Delay(200);
+
+        // Wait for first invocation to complete (with timeout)
+        var firstCompleted = await Task.WhenAny(handler.FirstInvocationCompleted, Task.Delay(5000));
+        Assert.True(firstCompleted == handler.FirstInvocationCompleted, "First invocation did not complete within timeout");
 
         // Retry the same job
         var envelope2 = new JobEnvelope
@@ -282,7 +285,10 @@ public class ProcessingWorkerServiceTests
             Version = 1
         };
         await queue.EnqueueAsync(envelope2);
-        await Task.Delay(200);
+
+        // Wait for second invocation to complete (with timeout)
+        var secondCompleted = await Task.WhenAny(handler.SecondInvocationCompleted, Task.Delay(5000));
+        Assert.True(secondCompleted == handler.SecondInvocationCompleted, "Second invocation did not complete within timeout");
 
         cts.Cancel();
         queue.Complete();
@@ -313,13 +319,28 @@ public class ProcessingWorkerServiceTests
         public string JobType => "TestJob";
         public int InvocationCount { get; private set; }
 
+        private readonly TaskCompletionSource _firstInvocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _secondInvocation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// Completes when the first invocation has finished (after throwing).
+        /// </summary>
+        public Task FirstInvocationCompleted => _firstInvocation.Task;
+
+        /// <summary>
+        /// Completes when the second invocation has finished (successfully).
+        /// </summary>
+        public Task SecondInvocationCompleted => _secondInvocation.Task;
+
         public Task HandleAsync(string jobId, TestJobPayload payload, CancellationToken cancellationToken = default)
         {
             InvocationCount++;
             if (InvocationCount == 1)
             {
+                _firstInvocation.TrySetResult();
                 throw new InvalidOperationException("Simulated failure on first attempt");
             }
+            _secondInvocation.TrySetResult();
             return Task.CompletedTask;
         }
     }
