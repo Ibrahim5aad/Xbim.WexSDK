@@ -37,24 +37,24 @@ Choose **Standalone** mode when you need a lightweight viewer without server inf
 ```
 Octopus/
 ├── src/
-│   ├── Octopus.Blazor           # Blazor component library (NuGet package)
-│   ├── Octopus.Client           # Generated API client (NuGet package)
-│   ├── Octopus.Web              # Blazor Server web application
-│   ├── Octopus.Server.App       # ASP.NET Core REST API
-│   ├── Octopus.Server.Domain    # Domain entities
-│   ├── Octopus.Server.Contracts # DTOs and API contracts
-│   ├── Octopus.Server.Abstractions    # Interfaces and abstractions
-│   ├── Octopus.Server.Persistence.EfCore  # Entity Framework Core data access
-│   ├── Octopus.Server.Processing      # Background job processing
-│   ├── Octopus.Server.Storage.LocalDisk   # Local disk storage provider
-│   ├── Octopus.Server.Storage.AzureBlob   # Azure Blob storage provider
-│   ├── Octopus.ServiceDefaults  # .NET Aspire shared configuration
-│   └── Octopus.AppHost          # .NET Aspire orchestration
+│   ├── Octopus.Blazor                          # Blazor component library (NuGet package)
+│   ├── Octopus.Client                          # Generated API client (NuGet package)
+│   ├── Octopus.Web                             # Blazor Server web application
+│   ├── Octopus.Server.App                      # ASP.NET Core REST API
+│   ├── Octopus.Server.Domain                   # Domain entities
+│   ├── Octopus.Server.Contracts                # DTOs and API contracts
+│   ├── Octopus.Server.Abstractions             # Interfaces and abstractions
+│   ├── Octopus.Server.Persistence.EfCore       # Entity Framework Core data access
+│   ├── Octopus.Server.Processing               # Background job processing
+│   ├── Octopus.Server.Storage.LocalDisk        # Local disk storage provider
+│   ├── Octopus.Server.Storage.AzureBlob        # Azure Blob storage provider
+│   ├── Octopus.ServiceDefaults                 # .NET Aspire shared configuration
+│   └── Octopus.AppHost                         # .NET Aspire orchestration
 ├── samples/
-│   ├── Octopus.Blazor.Sample        # WebAssembly standalone demo
-│   └── Octopus.Blazor.Server.Sample # Blazor Server demo with IFC support
+│   ├── Octopus.Blazor.Sample                   # WebAssembly standalone demo
+│   └── Octopus.Blazor.Server.Sample            # Blazor Server standalone demo with IFC support
 └── tests/
-    └── ...                      # Unit and integration tests
+    └── ...                                     # Unit and integration tests
 ```
 
 ## Features
