@@ -4,7 +4,9 @@
 @using Octopus.Blazor.Components.BuiltInButtons
 @using Octopus.Blazor.Interop
 @using Octopus.Blazor.Models
+@using Octopus.Blazor.Services
 @inject IModelsService ModelsService
+@inject ThemeService ThemeService
 @inject IProcessingService ProcessingService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -43,6 +45,7 @@ else if (modelVersion != null)
                            Id="mainViewer"
                            Width="100%"
                            Height="100%"
+                           BackgroundColor="@ThemeService.CurrentBackgroundColor"
                            OnViewerInitialized="OnViewerInitialized"
                            OnModelLoaded="OnModelLoaded"
                            OnError="OnViewerError">
@@ -112,6 +115,7 @@ else if (modelVersion != null)
     private List<ToolbarItemBase> _toolbarItems = new();
     private SectionBoxPlugin? _sectionBoxPlugin;
     private ClippingPlanePlugin? _clippingPlanePlugin;
+    private GridPlugin? _gridPlugin;
     private bool _interactivePluginsInitialized = false;
 
     // Sidebar panels
@@ -121,6 +125,7 @@ else if (modelVersion != null)
     protected override async Task OnInitializedAsync()
     {
         ProcessingService.OnStatusChanged += OnProcessingStatusChanged;
+        ThemeService.OnThemeChanged += OnThemeChanged;
 
         if (!VersionId.HasValue || VersionId.Value == Guid.Empty)
         {
@@ -213,9 +218,32 @@ else if (modelVersion != null)
     {
         InitializeToolbar();
 
-        if (viewer != null && wexbimUrl != null)
+        if (viewer != null)
         {
-            await viewer.LoadModelAsync(wexbimUrl, model?.Name ?? "Model");
+            // Add NavigationCubePlugin for orientation
+            var navigationCubePlugin = new NavigationCubePlugin
+            {
+                Ratio = 0.02,
+                PassiveAlpha = 1,
+                ActiveAlpha = 1
+            };
+            await viewer.AddPluginAsync(navigationCubePlugin);
+
+            // Add GridPlugin with theme-aware color
+            _gridPlugin = new GridPlugin
+            {
+                Factor = 1.5,
+                ZFactor = 20,
+                NumberOfLines = 20,
+                Color = ThemeService.CurrentGridColor
+            };
+            await viewer.AddPluginAsync(_gridPlugin);
+
+            // Load model if URL is ready
+            if (wexbimUrl != null)
+            {
+                await viewer.LoadModelAsync(wexbimUrl, model?.Name ?? "Model");
+            }
         }
 
         await InvokeAsync(StateHasChanged);
@@ -275,6 +303,16 @@ else if (modelVersion != null)
         StateHasChanged();
     }
 
+    private async void OnThemeChanged()
+    {
+        if (viewer != null)
+        {
+            // Apply theme to viewer and update grid color
+            await ThemeService.ApplyToViewerAsync(viewer, _gridPlugin);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     private string GetStatusBadgeClass(ProcessingStatus? status) => status switch
     {
         ProcessingStatus._0 => "bg-secondary",
@@ -296,6 +334,7 @@ else if (modelVersion != null)
     public void Dispose()
     {
         ProcessingService.OnStatusChanged -= OnProcessingStatusChanged;
+        ThemeService.OnThemeChanged -= OnThemeChanged;
         if (VersionId.HasValue)
         {
             ProcessingService.StopWatching(VersionId.Value);
