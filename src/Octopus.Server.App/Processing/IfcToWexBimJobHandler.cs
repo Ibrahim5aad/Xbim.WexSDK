@@ -7,6 +7,7 @@ using Octopus.Server.Domain.Entities;
 using Octopus.Server.Domain.Enums;
 using Octopus.Server.Persistence.EfCore;
 using Xbim.Common;
+using Xbim.Geometry.Abstractions;
 using Xbim.Ifc;
 using Xbim.ModelGeometry.Scene;
 
@@ -122,10 +123,7 @@ public class IfcToWexBimJobHandler : IJobHandler<IfcToWexBimJobPayload>
 
                 await NotifyProgressAsync(jobId, payload.ModelVersionId, "Opening", 20, "Opening IFC model...", cancellationToken);
 
-                // Configure xBIM services
-                IfcStore.ModelProviderFactory.UseHeuristicModelProvider();
-
-                // Open IFC file
+                // Open IFC file (xBIM geometry services configured at startup in Program.cs)
                 using var model = IfcStore.Open(tempPath);
                 if (model is null)
                 {
@@ -231,25 +229,19 @@ public class IfcToWexBimJobHandler : IJobHandler<IfcToWexBimJobPayload>
             {
                 await NotifyProgressAsync(jobId, modelVersionId, "Geometry", 50, "Creating geometry context...", CancellationToken.None);
 
-                // Create the 3D model context for geometry processing
-                var context = new Xbim3DModelContext(model);
-
-                // Process the geometry (tessellation)
-                context.CreateContext(null, true);
+                var context = new Xbim3DModelContext(model, engineVersion: XGeometryEngineVersion.V6);
+                
+                context.CreateContext(null, true, generateBREPs: true);
 
                 if (cancellationToken.IsCancellationRequested)
                     return null;
 
                 await NotifyProgressAsync(jobId, modelVersionId, "Tessellation", 70, "Generating WexBIM...", CancellationToken.None);
-
-                // Get all products with geometry
-                var products = model.Instances.OfType<Xbim.Ifc4.Interfaces.IIfcProduct>();
-
-                // Write to WexBIM format
+                
                 using var memoryStream = new MemoryStream();
                 using var wexBimBinaryWriter = new BinaryWriter(memoryStream);
 
-                model.SaveAsWexBim(wexBimBinaryWriter, products);
+                model.SaveAsWexBim(wexBimBinaryWriter);
 
                 return memoryStream.ToArray();
             }

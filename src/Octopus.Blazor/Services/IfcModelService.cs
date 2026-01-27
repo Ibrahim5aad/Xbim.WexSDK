@@ -6,6 +6,7 @@ using Xbim.IO;
 using Xbim.ModelGeometry.Scene;
 using Octopus.Blazor.Models;
 using Octopus.Blazor.Services.Abstractions;
+using Xbim.Geometry.Abstractions;
 
 namespace Octopus.Blazor.Services;
 
@@ -86,23 +87,8 @@ public class IfcModelService : IIfcModelService
     public IfcModelService(ILogger<IfcModelService>? logger = null)
     {
         _logger = logger;
-        
-        // Configure xBIM services (required for geometry engine)
-        ConfigureXbimServices();
-    }
-    
-    private void ConfigureXbimServices()
-    {
-        try
-        {
-            // Register the geometry engine with xBIM services
-            // This is required for the geometry processing to work
-            IfcStore.ModelProviderFactory.UseHeuristicModelProvider();
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogWarning(ex, "Failed to configure xBIM services. Geometry processing may not work.");
-        }
+        // Note: xBIM geometry services must be configured at startup via:
+        // XbimServices.Current.ConfigureServices(s => s.AddXbimToolkit(c => c.AddGeometryServices()));
     }
     
     /// <summary>
@@ -348,12 +334,9 @@ public class IfcModelService : IIfcModelService
                     Message = "Creating geometry context..."
                 });
                 
-                // Create the 3D model context for geometry processing
-                var context = new Xbim3DModelContext(model);
+                var context = new Xbim3DModelContext(model, engineVersion: XGeometryEngineVersion.V6);
                 
-                // Process the geometry (this uses the xBIM geometry engine)
-                // This generates the tessellated geometry for all products
-                context.CreateContext(null, true);
+                context.CreateContext(null, true, generateBREPs: true);
                 
                 if (cancellationToken.IsCancellationRequested)
                     return null;
@@ -365,16 +348,10 @@ public class IfcModelService : IIfcModelService
                     Message = "Generating wexbim..."
                 });
                 
-                // Get all products from the model that have geometry
-                var products = model.Instances.OfType<Xbim.Ifc4.Interfaces.IIfcProduct>();
-                
-                // Write to wexbim format
                 using var memoryStream = new MemoryStream();
                 using var wexBimBinaryWriter = new BinaryWriter(memoryStream);
                 
-                // Save as wexbim - the geometry context has already processed the geometry
-                // Pass the products, and SaveAsWexBim will use the processed geometry
-                model.SaveAsWexBim(wexBimBinaryWriter, products);
+                model.SaveAsWexBim(wexBimBinaryWriter);
                 
                 progress?.Report(new IfcProcessingProgress
                 {

@@ -10,8 +10,12 @@ using Octopus.Server.Persistence.EfCore.Extensions;
 using Octopus.Server.Processing;
 using Octopus.Server.Storage.AzureBlob;
 using Octopus.Server.Storage.LocalDisk;
+using Xbim.Common.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+XbimServices.Current.ConfigureServices(s => 
+    s.AddXbimToolkit(c => c.AddGeometryServices()));
 
 // Add service defaults (OpenTelemetry, health checks, resilience)
 builder.AddServiceDefaults();
@@ -38,6 +42,7 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
                 "SQL Server connection string 'OctopusDb' is required. " +
                 "Set Database:Provider to 'Sqlite' for local development without SQL Server.");
         }
+
         builder.Services.AddOctopusSqlServer(connectionString);
     }
 }
@@ -68,7 +73,8 @@ if (!builder.Environment.EnvironmentName.Equals("Testing", StringComparison.Ordi
     builder.Services.AddInMemoryProcessing(processing =>
     {
         processing.AddHandler<IfcToWexBimJobPayload, IfcToWexBimJobHandler>(IfcToWexBimJobHandler.JobTypeName);
-        processing.AddHandler<ExtractPropertiesJobPayload, ExtractPropertiesJobHandler>(ExtractPropertiesJobHandler.JobTypeName);
+        processing.AddHandler<ExtractPropertiesJobPayload, ExtractPropertiesJobHandler>(ExtractPropertiesJobHandler
+            .JobTypeName);
     });
 }
 
@@ -219,31 +225,33 @@ app.MapModelVersionEndpoints();
 app.MapPropertiesEndpoints();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy" }))
-   .WithName("HealthCheck")
-   .WithOpenApi();
+    .WithName("HealthCheck")
+    .WithOpenApi();
 
 // Debug endpoint to verify user context (development only)
 app.MapGet("/api/v1/me", (IUserContext userContext) =>
-{
-    if (!userContext.IsAuthenticated)
     {
-        return Results.Unauthorized();
-    }
+        if (!userContext.IsAuthenticated)
+        {
+            return Results.Unauthorized();
+        }
 
-    return Results.Ok(new
-    {
-        userId = userContext.UserId,
-        subject = userContext.Subject,
-        email = userContext.Email,
-        displayName = userContext.DisplayName,
-        isAuthenticated = userContext.IsAuthenticated
-    });
-})
-.WithName("GetCurrentUser")
-.WithOpenApi()
-.RequireAuthorization();
+        return Results.Ok(new
+        {
+            userId = userContext.UserId,
+            subject = userContext.Subject,
+            email = userContext.Email,
+            displayName = userContext.DisplayName,
+            isAuthenticated = userContext.IsAuthenticated
+        });
+    })
+    .WithName("GetCurrentUser")
+    .WithOpenApi()
+    .RequireAuthorization();
 
 app.Run();
 
 // Make the implicit Program class public so it can be used in integration tests
-public partial class Program { }
+public partial class Program
+{
+}

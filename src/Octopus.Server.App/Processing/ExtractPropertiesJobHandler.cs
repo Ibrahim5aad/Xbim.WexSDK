@@ -114,10 +114,7 @@ public class ExtractPropertiesJobHandler : IJobHandler<ExtractPropertiesJobPaylo
 
                 await NotifyProgressAsync(jobId, payload.ModelVersionId, "Opening", 20, "Opening IFC model...", cancellationToken);
 
-                // Configure xBIM services
-                IfcStore.ModelProviderFactory.UseHeuristicModelProvider();
-
-                // Open IFC file
+                // Open IFC file (xBIM geometry services configured at startup in Program.cs)
                 using var model = IfcStore.Open(tempIfcPath);
                 if (model is null)
                 {

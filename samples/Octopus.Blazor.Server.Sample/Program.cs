@@ -8,9 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Configure xBIM toolkit
+// Configure xBIM toolkit with geometry services
 var loggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Warning));
-XbimServices.Current.ConfigureServices(s => s.AddXbimToolkit(c => c.AddLoggerFactory(loggerFactory)));
+XbimServices.Current.ConfigureServices(s => s.AddXbimToolkit(c => c
+    .AddLoggerFactory(loggerFactory)
+    .AddGeometryServices()));
 
 // Add Octopus.Blazor server services using configuration binding from appsettings.json.
 // This reads from the "Octopus:Standalone" section for theme and FileLoaderPanel settings.
