@@ -146,20 +146,11 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     }
 
     /// <summary>
-    /// Helper to create a PAT and extract the result from the thrown exception.
-    /// NSwag generates code that throws on 201 Created, so we need to catch it.
+    /// Helper to create a PAT using the generated API client.
     /// </summary>
     private async Task<PersonalAccessTokenCreatedDto> CreatePatAsync(Guid workspaceId, CreatePersonalAccessTokenRequest request)
     {
-        try
-        {
-            await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request);
-            throw new InvalidOperationException("Expected OctopusApiException to be thrown for 201 Created");
-        }
-        catch (OctopusApiException<PersonalAccessTokenCreatedDto> ex)
-        {
-            return ex.Result;
-        }
+        return await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request);
     }
 
     #region Create PAT Tests
