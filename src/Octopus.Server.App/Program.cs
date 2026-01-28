@@ -16,6 +16,7 @@ using Octopus.Server.Persistence.EfCore.Extensions;
 using Octopus.Server.Processing;
 using Octopus.Server.Storage.AzureBlob;
 using Octopus.Server.Storage.LocalDisk;
+using Octopus.Server.App.Swagger;
 using Xbim.Common.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -144,6 +145,10 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "BIM backend API for the Octopus platform"
     });
+
+    // Remove default 200 OK response when 201 Created is defined
+    // This fixes NSwag code generation for create endpoints
+    options.OperationFilter<Remove200WhenCreatedOperationFilter>();
 
     // Add JWT Bearer authentication support in Swagger UI
     if (authMode.Equals("OIDC", StringComparison.OrdinalIgnoreCase))
