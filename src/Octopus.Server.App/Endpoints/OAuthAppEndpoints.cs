@@ -86,6 +86,9 @@ public static class OAuthAppEndpoints
         // Require oauth_apps:admin scope
         authZ.RequireScope(OAuthAppsAdmin);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Require Admin role to create apps
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
 
@@ -215,6 +218,9 @@ public static class OAuthAppEndpoints
         // Require oauth_apps:read scope
         authZ.RequireScope(OAuthAppsRead);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Require Admin role to list apps
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
 
@@ -261,6 +267,9 @@ public static class OAuthAppEndpoints
         // Require oauth_apps:read scope
         authZ.RequireScope(OAuthAppsRead);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Require Admin role to view app details
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
 
@@ -297,6 +306,9 @@ public static class OAuthAppEndpoints
 
         // Require oauth_apps:write scope
         authZ.RequireScope(OAuthAppsWrite);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to update apps
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
@@ -424,6 +436,9 @@ public static class OAuthAppEndpoints
         // Require oauth_apps:admin scope
         authZ.RequireScope(OAuthAppsAdmin);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Require Admin role to delete apps
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
 
@@ -481,6 +496,9 @@ public static class OAuthAppEndpoints
 
         // Require oauth_apps:admin scope
         authZ.RequireScope(OAuthAppsAdmin);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to rotate secrets
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
@@ -553,6 +571,9 @@ public static class OAuthAppEndpoints
 
         // Require oauth_apps:read scope
         authZ.RequireScope(OAuthAppsRead);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to view audit logs
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);

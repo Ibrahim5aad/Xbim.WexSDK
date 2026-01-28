@@ -36,8 +36,9 @@ public static class AuthServiceCollectionExtensions
         // Add HttpContextAccessor for IUserContext
         services.AddHttpContextAccessor();
 
-        // Register IUserContext
+        // Register IUserContext and IWorkspaceContext
         services.AddScoped<IUserContext, HttpContextUserContext>();
+        services.AddScoped<IWorkspaceContext, HttpContextWorkspaceContext>();
 
         // Register IAuthorizationService
         services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -69,8 +70,9 @@ public static class AuthServiceCollectionExtensions
         // Add HttpContextAccessor for IUserContext
         services.AddHttpContextAccessor();
 
-        // Register IUserContext
+        // Register IUserContext and IWorkspaceContext
         services.AddScoped<IUserContext, HttpContextUserContext>();
+        services.AddScoped<IWorkspaceContext, HttpContextWorkspaceContext>();
 
         // Register IAuthorizationService
         services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -129,6 +131,7 @@ public static class AuthServiceCollectionExtensions
     {
         services.AddHttpContextAccessor();
         services.AddScoped<IUserContext, HttpContextUserContext>();
+        services.AddScoped<IWorkspaceContext, HttpContextWorkspaceContext>();
         services.AddScoped<IAuthorizationService, AuthorizationService>();
         return services;
     }
@@ -165,8 +168,9 @@ public static class AuthServiceCollectionExtensions
         // Add HttpContextAccessor for IUserContext
         services.AddHttpContextAccessor();
 
-        // Register IUserContext
+        // Register IUserContext and IWorkspaceContext
         services.AddScoped<IUserContext, HttpContextUserContext>();
+        services.AddScoped<IWorkspaceContext, HttpContextWorkspaceContext>();
 
         // Register IAuthorizationService
         services.AddScoped<IAuthorizationService, AuthorizationService>();
@@ -223,8 +227,9 @@ public static class AuthServiceCollectionExtensions
         // Add HttpContextAccessor for IUserContext
         services.AddHttpContextAccessor();
 
-        // Register IUserContext
+        // Register IUserContext and IWorkspaceContext
         services.AddScoped<IUserContext, HttpContextUserContext>();
+        services.AddScoped<IWorkspaceContext, HttpContextWorkspaceContext>();
 
         // Register IAuthorizationService
         services.AddScoped<IAuthorizationService, AuthorizationService>();

@@ -97,6 +97,9 @@ public static class PersonalAccessTokenEndpoints
         // Require pats:write scope
         authZ.RequireScope(PatsWrite);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // User must be at least a member of the workspace to create PATs
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Member, cancellationToken);
 
@@ -222,6 +225,9 @@ public static class PersonalAccessTokenEndpoints
 
         // Require pats:read scope
         authZ.RequireScope(PatsRead);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // User must be at least a member of the workspace
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Member, cancellationToken);
@@ -537,6 +543,9 @@ public static class PersonalAccessTokenEndpoints
         // Require pats:admin scope
         authZ.RequireScope(PatsAdmin);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Require Admin role to view all PATs in workspace
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
 
@@ -603,6 +612,9 @@ public static class PersonalAccessTokenEndpoints
 
         // Require pats:admin scope
         authZ.RequireScope(PatsAdmin);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to revoke other users' PATs
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);

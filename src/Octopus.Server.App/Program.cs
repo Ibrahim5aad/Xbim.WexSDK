@@ -223,6 +223,19 @@ app.UseExceptionHandler(exceptionHandlerApp =>
                 correlationId
             });
         }
+        else if (exception is Octopus.Server.App.Auth.WorkspaceIsolationException isolationException)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = "workspace_isolation_violation",
+                message = "Cross-workspace access is not permitted.",
+                token_workspace_id = isolationException.TokenWorkspaceId,
+                resource_workspace_id = isolationException.ResourceWorkspaceId,
+                correlationId
+            });
+        }
         else if (exception is Octopus.Server.App.Auth.ForbiddenAccessException)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;

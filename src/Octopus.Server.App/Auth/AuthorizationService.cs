@@ -13,16 +13,19 @@ namespace Octopus.Server.App.Auth;
 public class AuthorizationService : IAuthorizationService
 {
     private readonly IUserContext _userContext;
+    private readonly IWorkspaceContext _workspaceContext;
     private readonly OctopusDbContext _dbContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private HashSet<string>? _cachedScopes;
 
     public AuthorizationService(
         IUserContext userContext,
+        IWorkspaceContext workspaceContext,
         OctopusDbContext dbContext,
         IHttpContextAccessor httpContextAccessor)
     {
         _userContext = userContext;
+        _workspaceContext = workspaceContext;
         _dbContext = dbContext;
         _httpContextAccessor = httpContextAccessor;
     }
@@ -273,6 +276,99 @@ public class AuthorizationService : IAuthorizationService
         {
             throw new ForbiddenAccessException(
                 $"Access denied. Minimum project role required: {minimumRole}");
+        }
+    }
+
+    #endregion
+
+    #region Workspace Isolation (Multi-tenant)
+
+    /// <inheritdoc />
+    public Guid? GetBoundWorkspaceId()
+    {
+        return _workspaceContext.WorkspaceId;
+    }
+
+    /// <inheritdoc />
+    public bool ValidateWorkspaceIsolation(Guid workspaceId)
+    {
+        // If no workspace context is bound (e.g., dev auth mode), isolation is not enforced
+        if (!_workspaceContext.IsBound)
+        {
+            return true;
+        }
+
+        // Check if the workspace matches the token's bound workspace
+        return _workspaceContext.WorkspaceId == workspaceId;
+    }
+
+    /// <inheritdoc />
+    public void RequireWorkspaceIsolation(Guid workspaceId)
+    {
+        // If no workspace context is bound (e.g., dev auth mode), skip isolation check
+        if (!_workspaceContext.IsBound)
+        {
+            return;
+        }
+
+        var boundWorkspaceId = _workspaceContext.WorkspaceId!.Value;
+        if (boundWorkspaceId != workspaceId)
+        {
+            throw new WorkspaceIsolationException(boundWorkspaceId, workspaceId);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ValidateProjectWorkspaceIsolationAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default)
+    {
+        // If no workspace context is bound, isolation is not enforced
+        if (!_workspaceContext.IsBound)
+        {
+            return true;
+        }
+
+        // Look up the project's workspace
+        var project = await _dbContext.Projects
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+
+        if (project == null)
+        {
+            // Project doesn't exist - return true to let the endpoint handle 404
+            return true;
+        }
+
+        return _workspaceContext.WorkspaceId == project.WorkspaceId;
+    }
+
+    /// <inheritdoc />
+    public async Task RequireProjectWorkspaceIsolationAsync(
+        Guid projectId,
+        CancellationToken cancellationToken = default)
+    {
+        // If no workspace context is bound, skip isolation check
+        if (!_workspaceContext.IsBound)
+        {
+            return;
+        }
+
+        // Look up the project's workspace
+        var project = await _dbContext.Projects
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+
+        if (project == null)
+        {
+            // Project doesn't exist - let the endpoint handle 404
+            return;
+        }
+
+        var boundWorkspaceId = _workspaceContext.WorkspaceId!.Value;
+        if (boundWorkspaceId != project.WorkspaceId)
+        {
+            throw new WorkspaceIsolationException(boundWorkspaceId, project.WorkspaceId);
         }
     }
 

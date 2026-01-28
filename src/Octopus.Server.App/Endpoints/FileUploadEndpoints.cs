@@ -98,6 +98,9 @@ public static class FileUploadEndpoints
         // Require files:write scope
         authZ.RequireScope(FilesWrite);
 
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
+
         // Require at least Editor role to upload files
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Editor, cancellationToken);
 
@@ -215,6 +218,9 @@ public static class FileUploadEndpoints
         // Require files:read scope
         authZ.RequireScope(FilesRead);
 
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
+
         // Require at least Viewer role to see upload sessions
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Viewer, cancellationToken);
 
@@ -253,6 +259,9 @@ public static class FileUploadEndpoints
 
         // Require files:write scope
         authZ.RequireScope(FilesWrite);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Require at least Editor role to upload files
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Editor, cancellationToken);
@@ -380,6 +389,9 @@ public static class FileUploadEndpoints
 
         // Require files:write scope
         authZ.RequireScope(FilesWrite);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Require at least Editor role to commit uploads
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Editor, cancellationToken);

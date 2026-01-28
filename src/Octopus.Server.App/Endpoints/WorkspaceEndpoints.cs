@@ -101,6 +101,7 @@ public static class WorkspaceEndpoints
 
     /// <summary>
     /// Lists all workspaces the current user is a member of.
+    /// When token has tid claim, only returns that workspace (if user is a member).
     /// Requires scope: workspaces:read
     /// </summary>
     private static async Task<IResult> ListWorkspaces(
@@ -128,9 +129,11 @@ public static class WorkspaceEndpoints
             .Where(m => m.UserId == userContext.UserId.Value)
             .Select(m => m.WorkspaceId);
 
-        // Query workspaces
+        // Query workspaces - filter by bound workspace if token has tid claim
+        var boundWorkspaceId = authZ.GetBoundWorkspaceId();
         var query = dbContext.Workspaces
             .Where(w => memberWorkspaceIds.Contains(w.Id))
+            .Where(w => !boundWorkspaceId.HasValue || w.Id == boundWorkspaceId.Value)
             .OrderByDescending(w => w.CreatedAt);
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -156,6 +159,7 @@ public static class WorkspaceEndpoints
     /// <summary>
     /// Gets a workspace by ID. Requires the user to be a member.
     /// Requires scope: workspaces:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> GetWorkspace(
         Guid workspaceId,
@@ -171,6 +175,9 @@ public static class WorkspaceEndpoints
 
         // Require workspaces:read scope
         authZ.RequireScope(WorkspacesRead);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Check access (any membership role is sufficient to view)
         var role = await authZ.GetWorkspaceRoleAsync(workspaceId, cancellationToken);
@@ -194,6 +201,7 @@ public static class WorkspaceEndpoints
     /// <summary>
     /// Updates a workspace. Requires Admin role or higher.
     /// Requires scope: workspaces:write
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> UpdateWorkspace(
         Guid workspaceId,
@@ -210,6 +218,9 @@ public static class WorkspaceEndpoints
 
         // Require workspaces:write scope
         authZ.RequireScope(WorkspacesWrite);
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to update workspace
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);

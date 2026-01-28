@@ -76,6 +76,9 @@ public static class WorkspaceMembershipEndpoints
             return Results.Unauthorized();
         }
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Check access (any membership role is sufficient to view members)
         var role = await authZ.GetWorkspaceRoleAsync(workspaceId, cancellationToken);
         if (!role.HasValue)
@@ -128,6 +131,9 @@ public static class WorkspaceMembershipEndpoints
         {
             return Results.Unauthorized();
         }
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to invite users
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
@@ -213,6 +219,9 @@ public static class WorkspaceMembershipEndpoints
         {
             return Results.Unauthorized();
         }
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Require Admin role to view invites
         await authZ.RequireWorkspaceAccessAsync(workspaceId, WorkspaceRole.Admin, cancellationToken);
@@ -345,6 +354,9 @@ public static class WorkspaceMembershipEndpoints
             return Results.Unauthorized();
         }
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Get current user's role
         var currentUserRole = await authZ.GetWorkspaceRoleAsync(workspaceId, cancellationToken);
         if (!currentUserRole.HasValue)
@@ -423,6 +435,9 @@ public static class WorkspaceMembershipEndpoints
         {
             return Results.Unauthorized();
         }
+
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
 
         // Get current user's role
         var currentUserRole = await authZ.GetWorkspaceRoleAsync(workspaceId, cancellationToken);

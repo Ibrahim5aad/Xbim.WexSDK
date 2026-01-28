@@ -58,6 +58,7 @@ public static class FileEndpoints
     /// Gets a file by its ID.
     /// Requires at least Viewer role in the project that contains the file.
     /// Requires scope: files:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> GetFile(
         Guid fileId,
@@ -83,6 +84,9 @@ public static class FileEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "File not found." });
         }
+
+        // Enforce workspace isolation - token can only access files in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(file.ProjectId, cancellationToken);
 
         // Check project access - returns 404 if no access to avoid exposing file existence
         if (!await authZ.CanAccessProjectAsync(file.ProjectId, ProjectRole.Viewer, cancellationToken))
@@ -116,6 +120,7 @@ public static class FileEndpoints
     /// Requires at least Viewer role in the project that contains the file.
     /// Streams the file content directly from storage.
     /// Requires scope: files:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> GetFileContent(
         Guid fileId,
@@ -142,6 +147,9 @@ public static class FileEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "File not found." });
         }
+
+        // Enforce workspace isolation - token can only access files in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(file.ProjectId, cancellationToken);
 
         // Check project access - returns 404 if no access to avoid exposing file existence
         if (!await authZ.CanAccessProjectAsync(file.ProjectId, ProjectRole.Viewer, cancellationToken))
@@ -187,6 +195,7 @@ public static class FileEndpoints
     /// Requires at least Editor role in the project that contains the file.
     /// Sets IsDeleted to true and records the deletion timestamp.
     /// Requires scope: files:write
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> DeleteFile(
         Guid fileId,
@@ -211,6 +220,9 @@ public static class FileEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "File not found." });
         }
+
+        // Enforce workspace isolation - token can only access files in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(file.ProjectId, cancellationToken);
 
         // Check project access - returns 404 if no access to avoid exposing file existence
         if (!await authZ.CanAccessProjectAsync(file.ProjectId, ProjectRole.Editor, cancellationToken))
@@ -255,6 +267,7 @@ public static class FileEndpoints
     /// Lists files in a project with optional filtering by kind and category.
     /// Requires at least Viewer role in the project.
     /// Requires scope: files:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> ListFiles(
         Guid projectId,
@@ -274,6 +287,9 @@ public static class FileEndpoints
 
         // Require files:read scope
         authZ.RequireScope(FilesRead);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Require at least Viewer role to list files
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Viewer, cancellationToken);

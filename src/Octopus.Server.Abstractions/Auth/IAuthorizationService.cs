@@ -108,4 +108,48 @@ public interface IAuthorizationService
     Task RequireProjectAccessAsync(Guid projectId, ProjectRole minimumRole = ProjectRole.Viewer, CancellationToken cancellationToken = default);
 
     #endregion
+
+    #region Workspace Isolation (Multi-tenant)
+
+    /// <summary>
+    /// Gets the workspace ID bound to the current request's token.
+    /// Returns null if no workspace context is bound (e.g., dev auth mode).
+    /// </summary>
+    Guid? GetBoundWorkspaceId();
+
+    /// <summary>
+    /// Checks if a workspace ID matches the token's bound workspace.
+    /// Returns true if workspace isolation is not enforced (no tid claim) or if the IDs match.
+    /// </summary>
+    /// <param name="workspaceId">The workspace ID to validate.</param>
+    /// <returns>True if the workspace matches or isolation is not enforced.</returns>
+    bool ValidateWorkspaceIsolation(Guid workspaceId);
+
+    /// <summary>
+    /// Ensures the specified workspace matches the token's bound workspace.
+    /// Throws if the workspace IDs don't match and isolation is enforced.
+    /// </summary>
+    /// <param name="workspaceId">The workspace ID to validate.</param>
+    /// <exception cref="Exception">Thrown if cross-workspace access is attempted.</exception>
+    void RequireWorkspaceIsolation(Guid workspaceId);
+
+    /// <summary>
+    /// Validates workspace isolation for a project by looking up its workspace.
+    /// Returns true if workspace isolation is not enforced or if the project's workspace matches.
+    /// </summary>
+    /// <param name="projectId">The project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the project's workspace matches or isolation is not enforced.</returns>
+    Task<bool> ValidateProjectWorkspaceIsolationAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ensures the project's workspace matches the token's bound workspace.
+    /// Throws if the workspace IDs don't match and isolation is enforced.
+    /// </summary>
+    /// <param name="projectId">The project ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="Exception">Thrown if cross-workspace access is attempted.</exception>
+    Task RequireProjectWorkspaceIsolationAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+    #endregion
 }

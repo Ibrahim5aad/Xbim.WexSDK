@@ -50,6 +50,7 @@ public static class ModelEndpoints
     /// <summary>
     /// Creates a new model in a project. Requires Editor role or higher in the project.
     /// Requires scope: models:write
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> CreateModel(
         Guid projectId,
@@ -66,6 +67,9 @@ public static class ModelEndpoints
 
         // Require models:write scope
         authZ.RequireScope(ModelsWrite);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Require at least Editor role to create models in a project
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.Editor, cancellationToken);
@@ -103,6 +107,7 @@ public static class ModelEndpoints
     /// <summary>
     /// Lists all models in a project. Requires Viewer role or higher.
     /// Requires scope: models:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> ListModels(
         Guid projectId,
@@ -120,6 +125,9 @@ public static class ModelEndpoints
 
         // Require models:read scope
         authZ.RequireScope(ModelsRead);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Check project access (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(projectId, cancellationToken);
@@ -159,6 +167,7 @@ public static class ModelEndpoints
     /// <summary>
     /// Gets a model by ID. Requires Viewer role or higher in the containing project.
     /// Requires scope: models:read
+    /// Enforces workspace isolation when token has tid claim.
     /// </summary>
     private static async Task<IResult> GetModel(
         Guid modelId,
@@ -184,6 +193,9 @@ public static class ModelEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "Model not found." });
         }
+
+        // Enforce workspace isolation - token can only access models in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(model.ProjectId, cancellationToken);
 
         // Check access to the containing project (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(model.ProjectId, cancellationToken);

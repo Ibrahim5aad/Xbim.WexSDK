@@ -90,6 +90,9 @@ public static class ModelVersionEndpoints
             return Results.NotFound(new { error = "Not Found", message = "Model not found." });
         }
 
+        // Enforce workspace isolation - token can only access models in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(model.ProjectId, cancellationToken);
+
         // Require at least Editor role to create versions
         await authZ.RequireProjectAccessAsync(model.ProjectId, ProjectRole.Editor, cancellationToken);
 
@@ -181,6 +184,9 @@ public static class ModelVersionEndpoints
             return Results.NotFound(new { error = "Not Found", message = "Model not found." });
         }
 
+        // Enforce workspace isolation - token can only access models in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(model.ProjectId, cancellationToken);
+
         // Check project access (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(model.ProjectId, cancellationToken);
         if (!role.HasValue)
@@ -246,6 +252,9 @@ public static class ModelVersionEndpoints
             return Results.NotFound(new { error = "Not Found", message = "Model version not found." });
         }
 
+        // Enforce workspace isolation - token can only access versions in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(version.Model!.ProjectId, cancellationToken);
+
         // Check access to the containing project (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(version.Model!.ProjectId, cancellationToken);
         if (!role.HasValue)
@@ -290,6 +299,9 @@ public static class ModelVersionEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "Model version not found." });
         }
+
+        // Enforce workspace isolation - token can only access versions in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(version.Model!.ProjectId, cancellationToken);
 
         // Check access to the containing project (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(version.Model!.ProjectId, cancellationToken);

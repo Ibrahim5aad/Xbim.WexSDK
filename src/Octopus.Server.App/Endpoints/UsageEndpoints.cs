@@ -57,6 +57,9 @@ public static class UsageEndpoints
         // Require workspaces:read scope
         authZ.RequireScope(WorkspacesRead);
 
+        // Enforce workspace isolation - token can only access its bound workspace
+        authZ.RequireWorkspaceIsolation(workspaceId);
+
         // Check workspace access - any membership role is sufficient to view usage
         var role = await authZ.GetWorkspaceRoleAsync(workspaceId, cancellationToken);
         if (!role.HasValue)
@@ -123,6 +126,9 @@ public static class UsageEndpoints
 
         // Require projects:read scope
         authZ.RequireScope(ProjectsRead);
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Check project access - Viewer role is sufficient to view usage
         if (!await authZ.CanAccessProjectAsync(projectId, ProjectRole.Viewer, cancellationToken))

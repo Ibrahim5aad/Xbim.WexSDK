@@ -18,6 +18,7 @@ public class ScopeEnforcementTests : IDisposable
 {
     private readonly OctopusDbContext _dbContext;
     private readonly IUserContext _userContext;
+    private readonly IWorkspaceContext _workspaceContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly DefaultHttpContext _httpContext;
     private readonly AuthorizationService _sut;
@@ -35,11 +36,15 @@ public class ScopeEnforcementTests : IDisposable
         _userContext.IsAuthenticated.Returns(true);
         _userContext.UserId.Returns(_userId);
 
+        _workspaceContext = Substitute.For<IWorkspaceContext>();
+        _workspaceContext.IsBound.Returns(false);
+        _workspaceContext.WorkspaceId.Returns((Guid?)null);
+
         _httpContext = new DefaultHttpContext();
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         _httpContextAccessor.HttpContext.Returns(_httpContext);
 
-        _sut = new AuthorizationService(_userContext, _dbContext, _httpContextAccessor);
+        _sut = new AuthorizationService(_userContext, _workspaceContext, _dbContext, _httpContextAccessor);
     }
 
     public void Dispose()
@@ -79,7 +84,7 @@ public class ScopeEnforcementTests : IDisposable
     {
         // Arrange
         _httpContextAccessor.HttpContext.Returns((HttpContext?)null);
-        var sut = new AuthorizationService(_userContext, _dbContext, _httpContextAccessor);
+        var sut = new AuthorizationService(_userContext, _workspaceContext, _dbContext, _httpContextAccessor);
 
         // Act
         var scopes = sut.GetScopes();

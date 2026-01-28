@@ -13,6 +13,7 @@ public class AuthorizationServiceTests : IDisposable
 {
     private readonly OctopusDbContext _dbContext;
     private readonly IUserContext _userContext;
+    private readonly IWorkspaceContext _workspaceContext;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly AuthorizationService _sut;
 
@@ -32,10 +33,14 @@ public class AuthorizationServiceTests : IDisposable
         _userContext.IsAuthenticated.Returns(true);
         _userContext.UserId.Returns(_userId);
 
+        _workspaceContext = Substitute.For<IWorkspaceContext>();
+        _workspaceContext.IsBound.Returns(false);
+        _workspaceContext.WorkspaceId.Returns((Guid?)null);
+
         _httpContextAccessor = Substitute.For<IHttpContextAccessor>();
         _httpContextAccessor.HttpContext.Returns((HttpContext?)null);
 
-        _sut = new AuthorizationService(_userContext, _dbContext, _httpContextAccessor);
+        _sut = new AuthorizationService(_userContext, _workspaceContext, _dbContext, _httpContextAccessor);
 
         // Seed base data
         SeedTestData();

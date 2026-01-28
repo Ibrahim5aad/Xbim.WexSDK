@@ -76,6 +76,9 @@ public static class PropertiesEndpoints
             return Results.NotFound(new { error = "Not Found", message = "Model version not found." });
         }
 
+        // Enforce workspace isolation - token can only access versions in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(modelVersion.Model!.ProjectId, cancellationToken);
+
         // Check access to the containing project (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(modelVersion.Model!.ProjectId, cancellationToken);
         if (!role.HasValue)
@@ -177,6 +180,9 @@ public static class PropertiesEndpoints
         {
             return Results.NotFound(new { error = "Not Found", message = "Model version not found." });
         }
+
+        // Enforce workspace isolation - token can only access versions in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(modelVersion.Model!.ProjectId, cancellationToken);
 
         // Check access to the containing project (Viewer or higher)
         var role = await authZ.GetProjectRoleAsync(modelVersion.Model!.ProjectId, cancellationToken);

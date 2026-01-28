@@ -64,6 +64,9 @@ public static class ProjectMembershipEndpoints
             return Results.Unauthorized();
         }
 
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
+
         // Check access (any project role is sufficient to view members)
         var role = await authZ.GetProjectRoleAsync(projectId, cancellationToken);
         if (!role.HasValue)
@@ -116,6 +119,9 @@ public static class ProjectMembershipEndpoints
         {
             return Results.Unauthorized();
         }
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Require ProjectAdmin role to add members
         await authZ.RequireProjectAccessAsync(projectId, ProjectRole.ProjectAdmin, cancellationToken);
@@ -194,6 +200,9 @@ public static class ProjectMembershipEndpoints
             return Results.Unauthorized();
         }
 
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
+
         // Check user's role (need to verify they have ProjectAdmin access)
         var currentUserRole = await authZ.GetProjectRoleAsync(projectId, cancellationToken);
         if (!currentUserRole.HasValue)
@@ -244,6 +253,9 @@ public static class ProjectMembershipEndpoints
         {
             return Results.Unauthorized();
         }
+
+        // Enforce workspace isolation - token can only access projects in its bound workspace
+        await authZ.RequireProjectWorkspaceIsolationAsync(projectId, cancellationToken);
 
         // Check user's role
         var currentUserRole = await authZ.GetProjectRoleAsync(projectId, cancellationToken);
