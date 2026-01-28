@@ -47,6 +47,16 @@ public class OAuthTokenOptions
     /// Refresh token lifetime in days. Default: 30 days.
     /// </summary>
     public int RefreshTokenLifetimeDays { get; set; } = 30;
+
+    /// <summary>
+    /// Maximum lifetime for Personal Access Tokens in days. Default: 365 days.
+    /// </summary>
+    public int MaxPersonalAccessTokenLifetimeDays { get; set; } = 365;
+
+    /// <summary>
+    /// Default lifetime for Personal Access Tokens in days. Default: 90 days.
+    /// </summary>
+    public int DefaultPersonalAccessTokenLifetimeDays { get; set; } = 90;
 }
 
 /// <summary>
@@ -118,6 +128,46 @@ public interface IOAuthTokenService
     /// Gets the refresh token expiration time from now.
     /// </summary>
     DateTimeOffset GetRefreshTokenExpiration();
+
+    /// <summary>
+    /// Generates a cryptographically random Personal Access Token.
+    /// </summary>
+    string GeneratePersonalAccessToken();
+
+    /// <summary>
+    /// Hashes a Personal Access Token for storage using SHA-256.
+    /// </summary>
+    string HashPersonalAccessToken(string token);
+
+    /// <summary>
+    /// Validates a Personal Access Token against a stored hash.
+    /// </summary>
+    bool ValidatePersonalAccessToken(string token, string tokenHash);
+
+    /// <summary>
+    /// Gets the prefix from a PAT for identification purposes.
+    /// </summary>
+    string GetPersonalAccessTokenPrefix(string token);
+
+    /// <summary>
+    /// Gets the maximum PAT lifetime in days.
+    /// </summary>
+    int MaxPersonalAccessTokenLifetimeDays { get; }
+
+    /// <summary>
+    /// Gets the default PAT lifetime in days.
+    /// </summary>
+    int DefaultPersonalAccessTokenLifetimeDays { get; }
+
+    /// <summary>
+    /// Generates a JWT access token for a Personal Access Token authentication.
+    /// </summary>
+    string GenerateAccessTokenForPat(
+        string subject,
+        Guid userId,
+        Guid workspaceId,
+        Guid patId,
+        IEnumerable<string> scopes);
 }
 
 /// <summary>
@@ -299,5 +349,89 @@ public class OAuthTokenService : IOAuthTokenService
     public DateTimeOffset GetRefreshTokenExpiration()
     {
         return DateTimeOffset.UtcNow.AddDays(_options.RefreshTokenLifetimeDays);
+    }
+
+    public int MaxPersonalAccessTokenLifetimeDays => _options.MaxPersonalAccessTokenLifetimeDays;
+
+    public int DefaultPersonalAccessTokenLifetimeDays => _options.DefaultPersonalAccessTokenLifetimeDays;
+
+    public string GeneratePersonalAccessToken()
+    {
+        // Generate a 256-bit random token with "ocpat_" prefix for identification
+        var bytes = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(bytes);
+        var token = Convert.ToBase64String(bytes)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
+        return $"ocpat_{token}";
+    }
+
+    public string HashPersonalAccessToken(string token)
+    {
+        // Use SHA-256 for hashing PATs
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(token);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
+    public bool ValidatePersonalAccessToken(string token, string tokenHash)
+    {
+        if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(tokenHash))
+        {
+            return false;
+        }
+
+        var computedHash = HashPersonalAccessToken(token);
+        var expectedBytes = Encoding.UTF8.GetBytes(tokenHash);
+        var computedBytes = Encoding.UTF8.GetBytes(computedHash);
+
+        return CryptographicOperations.FixedTimeEquals(expectedBytes, computedBytes);
+    }
+
+    public string GetPersonalAccessTokenPrefix(string token)
+    {
+        // Return first 12 characters for identification (e.g., "ocpat_AbCdEf")
+        if (string.IsNullOrEmpty(token))
+        {
+            return string.Empty;
+        }
+
+        return token.Length > 12 ? token[..12] : token;
+    }
+
+    public string GenerateAccessTokenForPat(
+        string subject,
+        Guid userId,
+        Guid workspaceId,
+        Guid patId,
+        IEnumerable<string> scopes)
+    {
+        var now = DateTime.UtcNow;
+        var expires = now.AddMinutes(_options.AccessTokenLifetimeMinutes);
+
+        var claims = new List<Claim>
+        {
+            new("sub", subject),
+            new("user_id", userId.ToString()),
+            new("tid", workspaceId.ToString()), // Tenant/workspace ID
+            new("pat_id", patId.ToString()), // PAT identifier
+            new("scp", string.Join(" ", scopes)), // Scopes
+            new("token_type", "pat"), // Indicate this is a PAT-derived token
+            new("iat", new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: _options.Issuer,
+            audience: _options.Audience,
+            claims: claims,
+            notBefore: now,
+            expires: expires,
+            signingCredentials: _signingCredentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

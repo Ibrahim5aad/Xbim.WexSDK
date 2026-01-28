@@ -31,6 +31,10 @@ public class OctopusDbContext : DbContext
     public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    // Personal Access Tokens
+    public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
+    public DbSet<PersonalAccessTokenAuditLog> PersonalAccessTokenAuditLogs => Set<PersonalAccessTokenAuditLog>();
+
     // IFC Properties
     public DbSet<IfcElement> IfcElements => Set<IfcElement>();
     public DbSet<IfcPropertySet> IfcPropertySets => Set<IfcPropertySet>();

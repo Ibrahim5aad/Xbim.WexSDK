@@ -115,8 +115,8 @@ var authMode = builder.Configuration.GetValue<string>("Auth:Mode") ?? "Developme
 
 if (authMode.Equals("Development", StringComparison.OrdinalIgnoreCase))
 {
-    // Development auth mode: inject a fixed principal
-    builder.Services.AddOctopusDevAuth(options =>
+    // Development auth mode: inject a fixed principal with PAT support
+    builder.Services.AddOctopusDevAuthWithPat(options =>
     {
         options.Subject = builder.Configuration.GetValue<string>("Auth:Dev:Subject") ?? "dev-user";
         options.Email = builder.Configuration.GetValue<string>("Auth:Dev:Email") ?? "dev@localhost";
@@ -125,8 +125,8 @@ if (authMode.Equals("Development", StringComparison.OrdinalIgnoreCase))
 }
 else if (authMode.Equals("OIDC", StringComparison.OrdinalIgnoreCase))
 {
-    // OIDC/JWT bearer auth mode: validate tokens via Authority + Audience
-    builder.Services.AddOctopusOidcAuth(builder.Configuration);
+    // OIDC/JWT bearer auth mode: validate tokens via Authority + Audience with PAT support
+    builder.Services.AddOctopusOidcAuthWithPat(builder.Configuration);
 }
 else
 {
@@ -277,6 +277,7 @@ app.MapModelVersionEndpoints();
 app.MapPropertiesEndpoints();
 app.MapOAuthAppEndpoints();
 app.MapOAuthEndpoints();
+app.MapPersonalAccessTokenEndpoints();
 
 // Detailed health check endpoint with DB and storage provider status
 app.MapHealthChecks("/healthz", new HealthCheckOptions
