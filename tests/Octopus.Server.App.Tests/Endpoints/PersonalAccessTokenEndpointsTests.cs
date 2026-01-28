@@ -1,13 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Octopus.Api.Client;
 using Octopus.Server.Abstractions.Processing;
-using Octopus.Server.Contracts;
 using Octopus.Server.Domain.Entities;
 using Octopus.Server.Persistence.EfCore;
 
@@ -18,7 +17,8 @@ namespace Octopus.Server.App.Tests.Endpoints;
 public class PersonalAccessTokenEndpointsTests : IDisposable
 {
     private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
+    private readonly HttpClient _httpClient;
+    private readonly OctopusApiClient _apiClient;
     private readonly string _testDbName;
     private readonly TestInMemoryProcessingQueue _processingQueue;
 
@@ -46,12 +46,13 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
             });
         });
 
-        _client = _factory.CreateClient();
+        _httpClient = _factory.CreateClient();
+        _apiClient = new OctopusApiClient(_httpClient.BaseAddress!.ToString(), _httpClient);
     }
 
     public void Dispose()
     {
-        _client.Dispose();
+        _httpClient.Dispose();
         _factory.Dispose();
     }
 
@@ -144,6 +145,23 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         return (workspace.Id, devUserId);
     }
 
+    /// <summary>
+    /// Helper to create a PAT and extract the result from the thrown exception.
+    /// NSwag generates code that throws on 201 Created, so we need to catch it.
+    /// </summary>
+    private async Task<PersonalAccessTokenCreatedDto> CreatePatAsync(Guid workspaceId, CreatePersonalAccessTokenRequest request)
+    {
+        try
+        {
+            await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request);
+            throw new InvalidOperationException("Expected OctopusApiException to be thrown for 201 Created");
+        }
+        catch (OctopusApiException<PersonalAccessTokenCreatedDto> ex)
+        {
+            return ex.Result;
+        }
+    }
+
     #region Create PAT Tests
 
     [Fact]
@@ -160,19 +178,17 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
+        var pat = await CreatePatAsync(workspaceId, request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-        var pat = await response.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
         Assert.NotNull(pat);
         Assert.Equal("Test PAT", pat.Name);
+        Assert.NotNull(pat.Token);
         Assert.StartsWith("ocpat_", pat.Token);
         Assert.StartsWith("ocpat_", pat.TokenPrefix);
         Assert.Equal(workspaceId, pat.WorkspaceId);
-        Assert.Contains("read", pat.Scopes);
-        Assert.Contains("write", pat.Scopes);
+        Assert.Contains("read", pat.Scopes!);
+        Assert.Contains("write", pat.Scopes!);
     }
 
     [Fact]
@@ -186,11 +202,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
             Scopes = new[] { "read" }
         };
 
-        // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request));
     }
 
     [Fact]
@@ -204,11 +218,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
             Scopes = Array.Empty<string>()
         };
 
-        // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request));
     }
 
     [Fact]
@@ -223,11 +235,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
             ExpiresInDays = 500 // Exceeds max of 365
         };
 
-        // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.CreatePersonalAccessTokenAsync(workspaceId, request));
     }
 
     [Fact]
@@ -243,20 +253,15 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var pat = await CreatePatAsync(workspaceId, request);
 
-        var pat = await response.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
-        Assert.NotNull(pat);
+        // Get audit logs using generated client
+        var auditLogs = await _apiClient.GetPersonalAccessTokenAuditLogsAsync(workspaceId, pat.Id!.Value);
 
-        // Get audit logs
-        var auditResponse = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{pat.Id}/audit-logs");
-        Assert.Equal(HttpStatusCode.OK, auditResponse.StatusCode);
-
-        var auditLogs = await auditResponse.Content.ReadFromJsonAsync<PagedList<PersonalAccessTokenAuditLogDto>>();
+        // Assert
         Assert.NotNull(auditLogs);
-        Assert.Single(auditLogs.Items);
-        Assert.Equal(PersonalAccessTokenAuditEventType.Created, auditLogs.Items[0].EventType);
+        Assert.Single(auditLogs.Items!);
+        Assert.Equal(PersonalAccessTokenAuditEventType._0 /* Created */, auditLogs.Items!.First().EventType);
     }
 
     #endregion
@@ -277,19 +282,16 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
                 Name = $"PAT {i}",
                 Scopes = new[] { "read" }
             };
-            await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats", request);
+            await CreatePatAsync(workspaceId, request);
         }
 
         // Act
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
+        var pats = await _apiClient.ListMyPersonalAccessTokensAsync(workspaceId);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var pats = await response.Content.ReadFromJsonAsync<PagedList<PersonalAccessTokenDto>>();
         Assert.NotNull(pats);
         Assert.Equal(3, pats.TotalCount);
-        Assert.Equal(3, pats.Items.Count);
+        Assert.Equal(3, pats.Items!.Count);
     }
 
     [Fact]
@@ -299,32 +301,28 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
 
         // Create a PAT
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "To Revoke",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "To Revoke",
+            Scopes = new[] { "read" }
+        });
 
         // Revoke it
-        await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
+        await _apiClient.RevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Create another active PAT
-        await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Active",
-                Scopes = new[] { "read" }
-            });
+        await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Active",
+            Scopes = new[] { "read" }
+        });
 
         // Act - list without includeRevoked
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
-        var pats = await response.Content.ReadFromJsonAsync<PagedList<PersonalAccessTokenDto>>();
+        var pats = await _apiClient.ListMyPersonalAccessTokensAsync(workspaceId);
 
         // Assert
-        Assert.Single(pats!.Items);
-        Assert.Equal("Active", pats.Items[0].Name);
+        Assert.Single(pats.Items!);
+        Assert.Equal("Active", pats.Items!.First().Name);
     }
 
     #endregion
@@ -336,21 +334,16 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Get Test PAT",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Get Test PAT",
+            Scopes = new[] { "read" }
+        });
 
         // Act
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
+        var pat = await _apiClient.GetPersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var pat = await response.Content.ReadFromJsonAsync<PersonalAccessTokenDto>();
         Assert.NotNull(pat);
         Assert.Equal("Get Test PAT", pat.Name);
     }
@@ -361,11 +354,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
 
-        // Act
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{Guid.NewGuid()}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.GetPersonalAccessTokenAsync(workspaceId, Guid.NewGuid()));
     }
 
     #endregion
@@ -377,13 +368,11 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Original Name",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Original Name",
+            Scopes = new[] { "read" }
+        });
 
         var updateRequest = new UpdatePersonalAccessTokenRequest
         {
@@ -391,12 +380,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}", updateRequest);
+        var pat = await _apiClient.UpdatePersonalAccessTokenAsync(workspaceId, created.Id!.Value, updateRequest);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var pat = await response.Content.ReadFromJsonAsync<PersonalAccessTokenDto>();
         Assert.NotNull(pat);
         Assert.Equal("Updated Name", pat.Name);
     }
@@ -406,16 +392,14 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "To Revoke",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "To Revoke",
+            Scopes = new[] { "read" }
+        });
 
         // Revoke it
-        await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
+        await _apiClient.RevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Try to update
         var updateRequest = new UpdatePersonalAccessTokenRequest
@@ -423,11 +407,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
             Name = "New Name"
         };
 
-        // Act
-        var response = await _client.PutAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats/{created.Id}", updateRequest);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.UpdatePersonalAccessTokenAsync(workspaceId, created.Id!.Value, updateRequest));
     }
 
     #endregion
@@ -439,24 +421,18 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "To Revoke",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "To Revoke",
+            Scopes = new[] { "read" }
+        });
 
         // Act
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await _apiClient.RevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Verify it's revoked
-        var getResponse = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{created.Id}");
-        var pat = await getResponse.Content.ReadFromJsonAsync<PersonalAccessTokenDto>();
-        Assert.True(pat!.IsRevoked);
+        var pat = await _apiClient.GetPersonalAccessTokenAsync(workspaceId, created.Id!.Value);
+        Assert.True(pat.IsRevoked);
         Assert.False(pat.IsActive);
     }
 
@@ -465,22 +441,19 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "To Revoke",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "To Revoke",
+            Scopes = new[] { "read" }
+        });
 
         // Act
-        await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
+        await _apiClient.RevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Assert - check audit log
-        var auditResponse = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{created.Id}/audit-logs");
-        var auditLogs = await auditResponse.Content.ReadFromJsonAsync<PagedList<PersonalAccessTokenAuditLogDto>>();
+        var auditLogs = await _apiClient.GetPersonalAccessTokenAuditLogsAsync(workspaceId, created.Id!.Value);
         Assert.NotNull(auditLogs);
-        Assert.Contains(auditLogs.Items, l => l.EventType == PersonalAccessTokenAuditEventType.RevokedByUser);
+        Assert.Contains(auditLogs.Items!, l => l.EventType == PersonalAccessTokenAuditEventType._2 /* RevokedByUser */);
     }
 
     #endregion
@@ -494,23 +467,19 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         var (workspaceId, _) = await CreateTestWorkspaceWithAdminUser();
 
         // Create a PAT
-        await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Admin Test PAT",
-                Scopes = new[] { "read" }
-            });
+        await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Admin Test PAT",
+            Scopes = new[] { "read" }
+        });
 
         // Act
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/admin/pats");
+        var pats = await _apiClient.ListWorkspacePersonalAccessTokensAsync(workspaceId);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var pats = await response.Content.ReadFromJsonAsync<PagedList<WorkspacePersonalAccessTokenSummaryDto>>();
         Assert.NotNull(pats);
-        Assert.Single(pats.Items);
-        Assert.NotNull(pats.Items[0].UserEmail);
+        Assert.Single(pats.Items!);
+        Assert.NotNull(pats.Items!.First().UserEmail);
     }
 
     [Fact]
@@ -519,11 +488,9 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
 
-        // Act
-        var response = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/admin/pats");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        // Act & Assert
+        await Assert.ThrowsAsync<OctopusApiException<ErrorResponse>>(async () =>
+            await _apiClient.ListWorkspacePersonalAccessTokensAsync(workspaceId));
     }
 
     [Fact]
@@ -533,25 +500,19 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         var (workspaceId, _) = await CreateTestWorkspaceWithAdminUser();
 
         // Create a PAT (as dev user who is admin)
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Admin Revoke Test",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Admin Revoke Test",
+            Scopes = new[] { "read" }
+        });
 
         // Act - admin revoke
-        var response = await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/admin/pats/{created!.Id}");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await _apiClient.AdminRevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Verify audit log shows admin revocation
-        var auditResponse = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{created.Id}/audit-logs");
-        var auditLogs = await auditResponse.Content.ReadFromJsonAsync<PagedList<PersonalAccessTokenAuditLogDto>>();
+        var auditLogs = await _apiClient.GetPersonalAccessTokenAuditLogsAsync(workspaceId, created.Id!.Value);
         Assert.NotNull(auditLogs);
-        Assert.Contains(auditLogs.Items, l => l.EventType == PersonalAccessTokenAuditEventType.RevokedByAdmin);
+        Assert.Contains(auditLogs.Items!, l => l.EventType == PersonalAccessTokenAuditEventType._3 /* RevokedByAdmin */);
     }
 
     #endregion
@@ -563,23 +524,22 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Auth Test PAT",
-                Scopes = new[] { "read", "write" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Auth Test PAT",
+            Scopes = new[] { "read", "write" }
+        });
 
         // Create a new client that uses PAT auth
-        var patClient = _factory.CreateClient();
-        patClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created!.Token);
+        var patHttpClient = _factory.CreateClient();
+        patHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.Token);
+        var patApiClient = new OctopusApiClient(patHttpClient.BaseAddress!.ToString(), patHttpClient);
 
         // Act - use the PAT to make a request
-        var response = await patClient.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
+        var pats = await patApiClient.ListMyPersonalAccessTokensAsync(workspaceId);
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(pats);
     }
 
     [Fact]
@@ -589,14 +549,13 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
 
         // Create a client with an invalid PAT
-        var patClient = _factory.CreateClient();
-        patClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "ocpat_invalid_token_here");
+        var patHttpClient = _factory.CreateClient();
+        patHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "ocpat_invalid_token_here");
+        var patApiClient = new OctopusApiClient(patHttpClient.BaseAddress!.ToString(), patHttpClient);
 
-        // Act
-        var response = await patClient.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Act & Assert - 401 returns no body so we get base OctopusApiException
+        await Assert.ThrowsAsync<OctopusApiException>(async () =>
+            await patApiClient.ListMyPersonalAccessTokensAsync(workspaceId));
     }
 
     [Fact]
@@ -604,26 +563,23 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "Revoke Auth Test",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "Revoke Auth Test",
+            Scopes = new[] { "read" }
+        });
 
         // Revoke the token
-        await _client.DeleteAsync($"/api/v1/workspaces/{workspaceId}/pats/{created!.Id}");
+        await _apiClient.RevokePersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Create a client with the revoked PAT
-        var patClient = _factory.CreateClient();
-        patClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.Token);
+        var patHttpClient = _factory.CreateClient();
+        patHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.Token);
+        var patApiClient = new OctopusApiClient(patHttpClient.BaseAddress!.ToString(), patHttpClient);
 
-        // Act
-        var response = await patClient.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Act & Assert - 401 returns no body so we get base OctopusApiException
+        await Assert.ThrowsAsync<OctopusApiException>(async () =>
+            await patApiClient.ListMyPersonalAccessTokensAsync(workspaceId));
     }
 
     [Fact]
@@ -631,27 +587,25 @@ public class PersonalAccessTokenEndpointsTests : IDisposable
     {
         // Arrange
         var (workspaceId, _) = await CreateTestWorkspaceWithMemberUser();
-        var createResponse = await _client.PostAsJsonAsync($"/api/v1/workspaces/{workspaceId}/pats",
-            new CreatePersonalAccessTokenRequest
-            {
-                Name = "LastUsed Test",
-                Scopes = new[] { "read" }
-            });
-        var created = await createResponse.Content.ReadFromJsonAsync<PersonalAccessTokenCreatedDto>();
+        var created = await CreatePatAsync(workspaceId, new CreatePersonalAccessTokenRequest
+        {
+            Name = "LastUsed Test",
+            Scopes = new[] { "read" }
+        });
 
         // Create a client with the PAT
-        var patClient = _factory.CreateClient();
-        patClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created!.Token);
+        var patHttpClient = _factory.CreateClient();
+        patHttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", created.Token);
+        var patApiClient = new OctopusApiClient(patHttpClient.BaseAddress!.ToString(), patHttpClient);
 
         // Act - use the PAT to make a request
-        await patClient.GetAsync($"/api/v1/workspaces/{workspaceId}/pats");
+        await patApiClient.ListMyPersonalAccessTokensAsync(workspaceId);
 
         // Get the PAT details to check LastUsedAt
-        var getResponse = await _client.GetAsync($"/api/v1/workspaces/{workspaceId}/pats/{created.Id}");
-        var pat = await getResponse.Content.ReadFromJsonAsync<PersonalAccessTokenDto>();
+        var pat = await _apiClient.GetPersonalAccessTokenAsync(workspaceId, created.Id!.Value);
 
         // Assert
-        Assert.NotNull(pat!.LastUsedAt);
+        Assert.NotNull(pat.LastUsedAt);
     }
 
     #endregion

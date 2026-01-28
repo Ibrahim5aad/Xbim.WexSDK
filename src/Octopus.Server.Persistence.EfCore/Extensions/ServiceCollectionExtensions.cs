@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Octopus.Server.Persistence.EfCore.Extensions;
@@ -19,7 +20,8 @@ public static class ServiceCollectionExtensions
         string connectionString = "Data Source=octopus.db")
     {
         services.AddDbContext<OctopusDbContext>(options =>
-            options.UseSqlite(connectionString));
+            options.UseSqlite(connectionString)
+                   .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         return services;
     }
