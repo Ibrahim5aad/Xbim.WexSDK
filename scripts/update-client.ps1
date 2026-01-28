@@ -12,7 +12,7 @@
     5. Rebuilds the client to regenerate code
 
 .PARAMETER ServerUrl
-    The base URL of the server. Default: http://localhost:5000
+    The base URL of the server. Default: http://localhost:5100
 
 .PARAMETER SkipServerStart
     If set, assumes the server is already running and skips start/stop.
@@ -25,7 +25,7 @@
 #>
 
 param(
-    [string]$ServerUrl = "http://localhost:5000",
+    [string]$ServerUrl = "http://localhost:5100",
     [switch]$SkipServerStart
 )
 

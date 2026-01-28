@@ -695,12 +695,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "302": {
             "description": "Found"
           },
@@ -1065,12 +1059,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "204": {
             "description": "No Content"
           },
@@ -1497,12 +1485,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "204": {
             "description": "No Content"
           },
@@ -1681,12 +1663,6 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": { }
-            }
-          },
           "204": {
             "description": "No Content"
           },

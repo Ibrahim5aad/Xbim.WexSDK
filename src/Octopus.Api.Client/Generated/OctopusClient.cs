@@ -110,7 +110,6 @@ namespace Octopus.Api.Client
         /// <remarks>
         /// Initiates the OAuth 2.0 authorization code flow with PKCE support.
         /// </remarks>
-        /// <returns>OK</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task OAuthAuthorizeAsync(string response_type, string client_id, string redirect_uri, string? scope = null, string? state = null, string? code_challenge = null, string? code_challenge_method = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
@@ -157,7 +156,7 @@ namespace Octopus.Api.Client
         System.Threading.Tasks.Task<OAuthAppDto> UpdateOAuthAppAsync(System.Guid workspaceId, System.Guid appId, UpdateOAuthAppRequest body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task DeleteOAuthAppAsync(System.Guid workspaceId, System.Guid appId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
@@ -197,7 +196,7 @@ namespace Octopus.Api.Client
         System.Threading.Tasks.Task<PersonalAccessTokenDto> UpdatePersonalAccessTokenAsync(System.Guid workspaceId, System.Guid tokenId, UpdatePersonalAccessTokenRequest body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task RevokePersonalAccessTokenAsync(System.Guid workspaceId, System.Guid tokenId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
@@ -212,7 +211,7 @@ namespace Octopus.Api.Client
         System.Threading.Tasks.Task<WorkspacePersonalAccessTokenSummaryDtoPagedList> ListWorkspacePersonalAccessTokensAsync(System.Guid workspaceId, int? page = null, int? pageSize = null, bool? includeRevoked = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task AdminRevokePersonalAccessTokenAsync(System.Guid workspaceId, System.Guid tokenId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
@@ -1637,7 +1636,6 @@ namespace Octopus.Api.Client
         /// <remarks>
         /// Initiates the OAuth 2.0 authorization code flow with PKCE support.
         /// </remarks>
-        /// <returns>OK</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task OAuthAuthorizeAsync(string response_type, string client_id, string redirect_uri, string? scope = null, string? state = null, string? code_challenge = null, string? code_challenge_method = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
@@ -1657,7 +1655,6 @@ namespace Octopus.Api.Client
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -1708,11 +1705,6 @@ namespace Octopus.Api.Client
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return default(void)!;
-                        }
-                        else
                         if (status_ == 302)
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -1727,6 +1719,13 @@ namespace Octopus.Api.Client
                                 throw new OctopusApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             throw new OctopusApiException<OAuthErrorResponse>("Bad Request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+
+                        if (status_ == 200 || status_ == 204)
+                        {
+
+                            return;
                         }
                         else
                         {
@@ -2342,7 +2341,7 @@ namespace Octopus.Api.Client
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task DeleteOAuthAppAsync(System.Guid workspaceId, System.Guid appId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
@@ -2359,7 +2358,6 @@ namespace Octopus.Api.Client
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -2392,14 +2390,9 @@ namespace Octopus.Api.Client
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return default(void)!;
-                        }
-                        else
                         if (status_ == 204)
                         {
-                            return default(void)!;
+                            return;
                         }
                         else
                         if (status_ == 404)
@@ -3100,7 +3093,7 @@ namespace Octopus.Api.Client
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task RevokePersonalAccessTokenAsync(System.Guid workspaceId, System.Guid tokenId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
@@ -3117,7 +3110,6 @@ namespace Octopus.Api.Client
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -3150,14 +3142,9 @@ namespace Octopus.Api.Client
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return default(void)!;
-                        }
-                        else
                         if (status_ == 204)
                         {
-                            return default(void)!;
+                            return;
                         }
                         else
                         if (status_ == 404)
@@ -3391,7 +3378,7 @@ namespace Octopus.Api.Client
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <returns>OK</returns>
+        /// <returns>No Content</returns>
         /// <exception cref="OctopusApiException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task AdminRevokePersonalAccessTokenAsync(System.Guid workspaceId, System.Guid tokenId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
@@ -3408,7 +3395,6 @@ namespace Octopus.Api.Client
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
                     request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
@@ -3441,14 +3427,9 @@ namespace Octopus.Api.Client
                         ProcessResponse(client_, response_);
 
                         var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            return default(void)!;
-                        }
-                        else
                         if (status_ == 204)
                         {
-                            return default(void)!;
+                            return;
                         }
                         else
                         if (status_ == 404)
