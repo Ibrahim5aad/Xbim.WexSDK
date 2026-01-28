@@ -1,6 +1,6 @@
 # Octopus
 
-[![Build Status](https://github.com/Ibrahim5aad/Octopus/actions/workflows/publish-nuget.yml/badge.svg)](https://github.com/Ibrahim5aad/Octopus/actions/workflows/publish-nuget.yml)
+[![Build Status](https://github.com/Ibrahim5aad/Octopus/actions/workflows/ci.yml/badge.svg)](https://github.com/Ibrahim5aad/Octopus/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 An open-source SDK and scaffold for building BIM (Building Information Modeling) applications with .NET 9. Octopus provides reusable components, a REST API server, and client libraries to accelerate the development of custom BIM solutions.
