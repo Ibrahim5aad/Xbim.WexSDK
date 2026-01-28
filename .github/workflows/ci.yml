@@ -127,8 +127,8 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Push to NuGet.org
-      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: Push to GitHub Packages
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -138,16 +138,22 @@ jobs:
           ./artifacts/*.snupkg
         generate_release_notes: true
         body: |
-          ## 📦 NuGet Packages
+          ## 📦 NuGet Packages (GitHub Packages)
+
+          ### Setup (one-time)
+          Add the GitHub Packages source to your NuGet config:
+          ```bash
+          dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username YOUR_GITHUB_USERNAME --password YOUR_GITHUB_PAT
+          ```
 
           ### Octopus.Blazor
-          [NuGet.org](https://www.nuget.org/packages/Octopus.Blazor/${{ steps.get_version.outputs.version }})
+          [GitHub Packages](https://github.com/${{ github.repository }}/pkgs/nuget/Octopus.Blazor)
           ```bash
           dotnet add package Octopus.Blazor --version ${{ steps.get_version.outputs.version }}
           ```
 
           ### Octopus.Api.Client
-          [NuGet.org](https://www.nuget.org/packages/Octopus.Api.Client/${{ steps.get_version.outputs.version }})
+          [GitHub Packages](https://github.com/${{ github.repository }}/pkgs/nuget/Octopus.Api.Client)
           ```bash
           dotnet add package Octopus.Api.Client --version ${{ steps.get_version.outputs.version }}
           ```
