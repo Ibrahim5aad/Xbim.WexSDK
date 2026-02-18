@@ -1,4 +1,4 @@
-﻿# Xbim SDK
+# Xbim SDK
 
 [![Build Status](https://github.com/Ibrahim5aad/Xbim/actions/workflows/ci.yml/badge.svg)](https://github.com/Ibrahim5aad/Xbim/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,7 +8,7 @@ An open-source SDK and scaffold for building BIM (Building Information Modeling)
 | Package | GitHub Packages |
 |---------|-----------------|
 | Xbim.WexBlazor | [View Package](https://github.com/Ibrahim5aad/Xbim/pkgs/nuget/Xbim.WexBlazor) |
-| Xbim.Server.Client | [View Package](https://github.com/Ibrahim5aad/Xbim/pkgs/nuget/Xbim.Server.Client) |
+| Xbim.WexServer.Client | [View Package](https://github.com/Ibrahim5aad/Xbim/pkgs/nuget/Xbim.WexServer.Client) |
 
 ![Xbim Viewer](screenshot.png)
 
@@ -38,16 +38,16 @@ Choose **Standalone** mode when you need a lightweight viewer without server inf
 Xbim/
 ├── src/
 │   ├── Xbim.WexBlazor                          # Blazor component library (NuGet package)
-│   ├── Xbim.Server.Client                          # Generated API client (NuGet package)
+│   ├── Xbim.WexServer.Client                          # Generated API client (NuGet package)
 │   ├── Xbim.Web                             # Blazor Server web application
-│   ├── Xbim.Server.App                      # ASP.NET Core REST API
-│   ├── Xbim.Server.Domain                   # Domain entities
-│   ├── Xbim.Server.Contracts                # DTOs and API contracts
-│   ├── Xbim.Server.Abstractions             # Interfaces and abstractions
-│   ├── Xbim.Server.Persistence.EfCore       # Entity Framework Core data access
-│   ├── Xbim.Server.Processing               # Background job processing
-│   ├── Xbim.Server.Storage.LocalDisk        # Local disk storage provider
-│   ├── Xbim.Server.Storage.AzureBlob        # Azure Blob storage provider
+│   ├── Xbim.WexServer.App                      # ASP.NET Core REST API
+│   ├── Xbim.WexServer.Domain                   # Domain entities
+│   ├── Xbim.WexServer.Contracts                # DTOs and API contracts
+│   ├── Xbim.WexServer.Abstractions             # Interfaces and abstractions
+│   ├── Xbim.WexServer.Persistence.EfCore       # Entity Framework Core data access
+│   ├── Xbim.WexServer.Processing               # Background job processing
+│   ├── Xbim.WexServer.Storage.LocalDisk        # Local disk storage provider
+│   ├── Xbim.WexServer.Storage.AzureBlob        # Azure Blob storage provider
 │   ├── Xbim.ServiceDefaults                 # .NET Aspire shared configuration
 │   └── Xbim.AppHost                         # .NET Aspire orchestration
 ├── samples/
@@ -135,7 +135,7 @@ For full BIM applications with model management, storage, and collaboration:
 ```bash
 # If you haven't added the GitHub Packages source yet (see Standalone Mode above)
 dotnet add package Xbim.WexBlazor
-dotnet add package Xbim.Server.Client
+dotnet add package Xbim.WexServer.Client
 ```
 
 Register services in `Program.cs`:
@@ -177,7 +177,7 @@ In platform mode, you additionally get:
 2. Run the server:
 
 ```bash
-dotnet run --project src/Xbim.Server.App
+dotnet run --project src/Xbim.WexServer.App
 ```
 
 ### Running with .NET Aspire
@@ -319,7 +319,7 @@ dotnet run --project samples/Xbim.WexBlazor.Server.Sample
 ## Documentation
 
 - [Xbim.WexBlazor Component Library](src/Xbim.WexBlazor/README.md)
-- [Xbim.Server.Client API Client](src/Xbim.Server.Client/README.md)
+- [Xbim.WexServer.Client API Client](src/Xbim.WexServer.Client/README.md)
 
 ## Technology Stack
 

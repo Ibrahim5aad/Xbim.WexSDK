@@ -41,41 +41,41 @@ jobs:
 
     - name: Restore dependencies
       run: |
-        dotnet restore src/Xbim.Server.Client/Xbim.Server.Client.csproj
-        dotnet restore src/Xbim.Server.App/Xbim.Server.App.csproj
-        dotnet restore src/Xbim.Server.Processing/Xbim.Server.Processing.csproj
-        dotnet restore src/Xbim.Server.Storage.AzureBlob/Xbim.Server.Storage.AzureBlob.csproj
-        dotnet restore src/Xbim.Server.Storage.LocalDisk/Xbim.Server.Storage.LocalDisk.csproj
-        dotnet restore tests/Xbim.Server.Client.Tests/Xbim.Server.Client.Tests.csproj
-        dotnet restore tests/Xbim.Server.App.Tests/Xbim.Server.App.Tests.csproj
-        dotnet restore tests/Xbim.Server.Processing.Tests/Xbim.Server.Processing.Tests.csproj
-        dotnet restore tests/Xbim.Server.Storage.Tests/Xbim.Server.Storage.Tests.csproj
+        dotnet restore src/Xbim.WexServer.Client/Xbim.WexServer.Client.csproj
+        dotnet restore src/Xbim.WexServer.App/Xbim.WexServer.App.csproj
+        dotnet restore src/Xbim.WexServer.Processing/Xbim.WexServer.Processing.csproj
+        dotnet restore src/Xbim.WexServer.Storage.AzureBlob/Xbim.WexServer.Storage.AzureBlob.csproj
+        dotnet restore src/Xbim.WexServer.Storage.LocalDisk/Xbim.WexServer.Storage.LocalDisk.csproj
+        dotnet restore tests/Xbim.WexServer.Client.Tests/Xbim.WexServer.Client.Tests.csproj
+        dotnet restore tests/Xbim.WexServer.App.Tests/Xbim.WexServer.App.Tests.csproj
+        dotnet restore tests/Xbim.WexServer.Processing.Tests/Xbim.WexServer.Processing.Tests.csproj
+        dotnet restore tests/Xbim.WexServer.Storage.Tests/Xbim.WexServer.Storage.Tests.csproj
 
     - name: Update version in csproj
       if: steps.get_version.outputs.is_release == 'true'
       run: |
         $version = "${{ steps.get_version.outputs.version }}"
-        (Get-Content src/Xbim.Server.Client/Xbim.Server.Client.csproj) -replace '<Version>.*</Version>', "<Version>$version</Version>" | Set-Content src/Xbim.Server.Client/Xbim.Server.Client.csproj
+        (Get-Content src/Xbim.WexServer.Client/Xbim.WexServer.Client.csproj) -replace '<Version>.*</Version>', "<Version>$version</Version>" | Set-Content src/Xbim.WexServer.Client/Xbim.WexServer.Client.csproj
       shell: pwsh
 
     - name: Build
       run: |
-        dotnet build src/Xbim.Server.Client/Xbim.Server.Client.csproj --configuration Release --no-restore
-        dotnet build src/Xbim.Server.App/Xbim.Server.App.csproj --configuration Release --no-restore
-        dotnet build src/Xbim.Server.Processing/Xbim.Server.Processing.csproj --configuration Release --no-restore
-        dotnet build src/Xbim.Server.Storage.AzureBlob/Xbim.Server.Storage.AzureBlob.csproj --configuration Release --no-restore
-        dotnet build src/Xbim.Server.Storage.LocalDisk/Xbim.Server.Storage.LocalDisk.csproj --configuration Release --no-restore
+        dotnet build src/Xbim.WexServer.Client/Xbim.WexServer.Client.csproj --configuration Release --no-restore
+        dotnet build src/Xbim.WexServer.App/Xbim.WexServer.App.csproj --configuration Release --no-restore
+        dotnet build src/Xbim.WexServer.Processing/Xbim.WexServer.Processing.csproj --configuration Release --no-restore
+        dotnet build src/Xbim.WexServer.Storage.AzureBlob/Xbim.WexServer.Storage.AzureBlob.csproj --configuration Release --no-restore
+        dotnet build src/Xbim.WexServer.Storage.LocalDisk/Xbim.WexServer.Storage.LocalDisk.csproj --configuration Release --no-restore
 
     - name: Run tests
       run: |
-        dotnet test tests/Xbim.Server.Client.Tests/Xbim.Server.Client.Tests.csproj --configuration Release --verbosity normal
-        dotnet test tests/Xbim.Server.App.Tests/Xbim.Server.App.Tests.csproj --configuration Release --verbosity normal
-        dotnet test tests/Xbim.Server.Processing.Tests/Xbim.Server.Processing.Tests.csproj --configuration Release --verbosity normal
-        dotnet test tests/Xbim.Server.Storage.Tests/Xbim.Server.Storage.Tests.csproj --configuration Release --verbosity normal
+        dotnet test tests/Xbim.WexServer.Client.Tests/Xbim.WexServer.Client.Tests.csproj --configuration Release --verbosity normal
+        dotnet test tests/Xbim.WexServer.App.Tests/Xbim.WexServer.App.Tests.csproj --configuration Release --verbosity normal
+        dotnet test tests/Xbim.WexServer.Processing.Tests/Xbim.WexServer.Processing.Tests.csproj --configuration Release --verbosity normal
+        dotnet test tests/Xbim.WexServer.Storage.Tests/Xbim.WexServer.Storage.Tests.csproj --configuration Release --verbosity normal
 
-    - name: Pack Xbim.Server.Client
+    - name: Pack Xbim.WexServer.Client
       if: steps.get_version.outputs.is_release == 'true'
-      run: dotnet pack src/Xbim.Server.Client/Xbim.Server.Client.csproj --configuration Release --no-build --output ./artifacts
+      run: dotnet pack src/Xbim.WexServer.Client/Xbim.WexServer.Client.csproj --configuration Release --no-build --output ./artifacts
 
     - name: Upload NuGet packages
       if: steps.get_version.outputs.is_release == 'true'
@@ -135,9 +135,9 @@ jobs:
         body: |
           ## NuGet Packages
 
-          ### Xbim.Server.Client
+          ### Xbim.WexServer.Client
           ```bash
-          dotnet add package Xbim.Server.Client --version ${{ steps.get_version.outputs.version }}
+          dotnet add package Xbim.WexServer.Client --version ${{ steps.get_version.outputs.version }}
           ```
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
