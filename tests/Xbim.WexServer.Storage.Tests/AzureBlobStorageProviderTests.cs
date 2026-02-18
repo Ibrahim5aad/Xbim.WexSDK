@@ -12,6 +12,7 @@ namespace Xbim.WexServer.Storage.Tests;
 /// Or using Docker: docker run -p 10000:10000 mcr.microsoft.com/azure-storage/azurite
 /// </summary>
 [Collection("AzuriteTests")]
+[Trait("Category", "RequiresAzurite")]
 public class AzureBlobStorageProviderTests : IAsyncLifetime
 {
     // Azurite default connection string

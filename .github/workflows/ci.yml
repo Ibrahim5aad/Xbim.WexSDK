@@ -71,7 +71,7 @@ jobs:
         dotnet test tests/Xbim.WexServer.Client.Tests/Xbim.WexServer.Client.Tests.csproj --configuration Release --verbosity normal
         dotnet test tests/Xbim.WexServer.Tests/Xbim.WexServer.Tests.csproj --configuration Release --verbosity normal
         dotnet test tests/Xbim.WexServer.Processing.Tests/Xbim.WexServer.Processing.Tests.csproj --configuration Release --verbosity normal
-        dotnet test tests/Xbim.WexServer.Storage.Tests/Xbim.WexServer.Storage.Tests.csproj --configuration Release --verbosity normal
+        dotnet test tests/Xbim.WexServer.Storage.Tests/Xbim.WexServer.Storage.Tests.csproj --configuration Release --verbosity normal --filter "Category!=RequiresAzurite"
 
     - name: Pack Xbim.WexServer.Client
       if: steps.get_version.outputs.is_release == 'true'
