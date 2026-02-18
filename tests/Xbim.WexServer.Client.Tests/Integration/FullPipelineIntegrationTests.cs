@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xbim.WexServer.Client;
 using Xbim.WexServer.Abstractions.Processing;
 using Xbim.WexServer.Abstractions.Storage;
-using Xbim.WexServer.App.Processing;
+using Xbim.WexServer.Processing;
 using Xbim.WexServer.Domain.Entities;
 using Xbim.WexServer.Persistence.EfCore;
 using Xbim.WexServer.Processing;

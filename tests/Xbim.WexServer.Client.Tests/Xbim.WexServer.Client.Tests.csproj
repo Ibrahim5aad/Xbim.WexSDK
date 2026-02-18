@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Xbim.WexServer.Client\Xbim.WexServer.Client.csproj" />
-    <ProjectReference Include="..\..\src\Xbim.WexServer.App\Xbim.WexServer.App.csproj" />
+    <ProjectReference Include="..\..\src\Xbim.WexServer\Xbim.WexServer.csproj" />
     <ProjectReference Include="..\..\src\Xbim.WexServer.Persistence.EfCore\Xbim.WexServer.Persistence.EfCore.csproj" />
     <ProjectReference Include="..\..\src\Xbim.WexServer.Abstractions\Xbim.WexServer.Abstractions.csproj" />
   </ItemGroup>

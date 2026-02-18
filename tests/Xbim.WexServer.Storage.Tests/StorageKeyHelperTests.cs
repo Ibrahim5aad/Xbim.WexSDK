@@ -1,4 +1,4 @@
-using Xbim.WexServer.App.Storage;
+using Xbim.WexServer.Storage;
 using Xunit;
 
 namespace Xbim.WexServer.Storage.Tests;

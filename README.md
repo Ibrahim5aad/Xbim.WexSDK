@@ -40,7 +40,7 @@ Xbim/
 │   ├── Xbim.WexBlazor                          # Blazor component library (NuGet package)
 │   ├── Xbim.WexServer.Client                          # Generated API client (NuGet package)
 │   ├── Xbim.Web                             # Blazor Server web application
-│   ├── Xbim.WexServer.App                      # ASP.NET Core REST API
+│   ├── Xbim.WexServer                      # ASP.NET Core REST API
 │   ├── Xbim.WexServer.Domain                   # Domain entities
 │   ├── Xbim.WexServer.Contracts                # DTOs and API contracts
 │   ├── Xbim.WexServer.Abstractions             # Interfaces and abstractions
@@ -48,8 +48,8 @@ Xbim/
 │   ├── Xbim.WexServer.Processing               # Background job processing
 │   ├── Xbim.WexServer.Storage.LocalDisk        # Local disk storage provider
 │   ├── Xbim.WexServer.Storage.AzureBlob        # Azure Blob storage provider
-│   ├── Xbim.ServiceDefaults                 # .NET Aspire shared configuration
-│   └── Xbim.AppHost                         # .NET Aspire orchestration
+│   ├── Xbim.WexServer.ServiceDefaults                 # .NET Aspire shared configuration
+│   └── Xbim.WexAppHost                         # .NET Aspire orchestration
 ├── samples/
 │   ├── Xbim.WexBlazor.Sample                   # WebAssembly standalone demo
 │   └── Xbim.WexBlazor.Server.Sample            # Blazor Server standalone demo with IFC support
@@ -177,7 +177,7 @@ In platform mode, you additionally get:
 2. Run the server:
 
 ```bash
-dotnet run --project src/Xbim.WexServer.App
+dotnet run --project src/Xbim.WexServer
 ```
 
 ### Running with .NET Aspire
@@ -185,7 +185,7 @@ dotnet run --project src/Xbim.WexServer.App
 For local development with full orchestration:
 
 ```bash
-dotnet run --project src/Xbim.AppHost
+dotnet run --project src/Xbim.WexAppHost
 ```
 
 ## Server Configuration

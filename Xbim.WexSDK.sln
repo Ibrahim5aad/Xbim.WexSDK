@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5D13C73B-7C64-4902-B548-AF5F955B0680}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.App", "src\Xbim.WexServer.App\Xbim.WexServer.App.csproj", "{192863DB-AFE4-401B-9559-92AA749F0BDB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer", "src\Xbim.WexServer\Xbim.WexServer.csproj", "{192863DB-AFE4-401B-9559-92AA749F0BDB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Contracts", "src\Xbim.WexServer.Contracts\Xbim.WexServer.Contracts.csproj", "{EAF61798-F224-4B4D-A52E-A6D99AC33E50}"
 EndProject
@@ -13,9 +13,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Domain", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Abstractions", "src\Xbim.WexServer.Abstractions\Xbim.WexServer.Abstractions.csproj", "{1F053D8A-382A-4720-B4D0-B2CCBEBFAC95}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.ServiceDefaults", "src\Xbim.ServiceDefaults\Xbim.ServiceDefaults.csproj", "{4DACCBE1-8D6D-4856-828F-5EFEB553F642}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.ServiceDefaults", "src\Xbim.WexServer.ServiceDefaults\Xbim.WexServer.ServiceDefaults.csproj", "{4DACCBE1-8D6D-4856-828F-5EFEB553F642}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.AppHost", "src\Xbim.AppHost\Xbim.AppHost.csproj", "{CEF9C9B3-6D46-4C6F-87A3-14B7B44E61D0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexAppHost", "src\Xbim.WexAppHost\Xbim.WexAppHost.csproj", "{CEF9C9B3-6D46-4C6F-87A3-14B7B44E61D0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Persistence.EfCore", "src\Xbim.WexServer.Persistence.EfCore\Xbim.WexServer.Persistence.EfCore.csproj", "{DBC34C47-5C0C-4307-9279-A6F118025F4A}"
 EndProject
@@ -27,11 +27,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Processing",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Client", "src\Xbim.WexServer.Client\Xbim.WexServer.Client.csproj", "{65BA441C-2128-4491-B8CD-C9E5B9AEEE3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.Web", "src\Xbim.Web\Xbim.Web.csproj", "{98C5C607-9458-4D8B-A87D-A39A6426E47F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexApp", "src\Xbim.WexApp\Xbim.WexApp.csproj", "{98C5C607-9458-4D8B-A87D-A39A6426E47F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.App.Tests", "tests\Xbim.WexServer.App.Tests\Xbim.WexServer.App.Tests.csproj", "{070640AA-E7EE-4736-A4AF-240F7E6229DB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Tests", "tests\Xbim.WexServer.Tests\Xbim.WexServer.Tests.csproj", "{070640AA-E7EE-4736-A4AF-240F7E6229DB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xbim.WexServer.Storage.Tests", "tests\Xbim.WexServer.Storage.Tests\Xbim.WexServer.Storage.Tests.csproj", "{FD34F3CC-E5F7-4699-B766-4BE6B0E2CC7A}"
 EndProject

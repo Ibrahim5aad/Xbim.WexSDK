@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Xbim.Web</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Xbim.WexBlazor" Version="1.7.0" />
+    <ProjectReference Include="..\Xbim.WexServer.ServiceDefaults\Xbim.WexServer.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

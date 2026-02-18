@@ -28,7 +28,7 @@
     <ProjectReference Include="..\..\src\Xbim.WexServer.Abstractions\Xbim.WexServer.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Xbim.WexServer.Storage.LocalDisk\Xbim.WexServer.Storage.LocalDisk.csproj" />
     <ProjectReference Include="..\..\src\Xbim.WexServer.Storage.AzureBlob\Xbim.WexServer.Storage.AzureBlob.csproj" />
-    <ProjectReference Include="..\..\src\Xbim.WexServer.App\Xbim.WexServer.App.csproj" />
+    <ProjectReference Include="..\..\src\Xbim.WexServer\Xbim.WexServer.csproj" />
   </ItemGroup>
 
 </Project>

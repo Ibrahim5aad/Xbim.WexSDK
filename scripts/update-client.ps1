@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     This script:
-    1. Starts the Xbim.WexServer.App
+    1. Starts the Xbim.WexServer
     2. Waits for the server to be ready
     3. Downloads the swagger.json
     4. Stops the server
@@ -32,7 +32,7 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
-$serverProject = Join-Path $repoRoot "src/Xbim.WexServer.App/Xbim.WexServer.App.csproj"
+$serverProject = Join-Path $repoRoot "src/Xbim.WexServer/Xbim.WexServer.csproj"
 $clientDir = Join-Path $repoRoot "src/Xbim.WexServer.Client"
 $swaggerPath = Join-Path $clientDir "swagger.json"
 
